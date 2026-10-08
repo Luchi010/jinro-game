@@ -53,6 +53,10 @@ input::placeholder{letter-spacing:0;text-transform:none;opacity:.5}
 #bubble[hidden]{display:none}
 #toast{position:fixed;left:50%;top:38%;transform:translateX(-50%);background:var(--panel);border:1px solid var(--gold);padding:10px 16px;border-radius:12px;font-size:15px;z-index:6;pointer-events:none;max-width:80vw;text-align:center}
 #toast[hidden]{display:none}
+#death{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(70,0,0,.72);color:#ffb0b0;font-family:serif;font-size:clamp(64px,20vw,150px);font-weight:800;letter-spacing:.12em;text-shadow:0 0 24px #f00,4px 4px 0 #300;z-index:20;pointer-events:none;animation:deathFlash .7s ease-out}
+#death small{font-size:clamp(16px,4vw,28px);letter-spacing:.12em;color:#fff;margin-top:12px}
+#death[hidden]{display:none}
+@keyframes deathFlash{0%{opacity:0;transform:scale(1.5)}45%{opacity:1;transform:scale(1)}100%{opacity:1}}
 #bubble button{padding:9px 16px;border-radius:10px;border:1px solid var(--gold);background:var(--panel);color:var(--ink);font-size:17px;font-weight:800;box-shadow:0 2px 10px #000a}
 #bubble button.kill{background:#8a1c1c;border-color:#ff8a8a}
 </style>
@@ -84,6 +88,7 @@ input::placeholder{letter-spacing:0;text-transform:none;opacity:.5}
 </main>
 <div id="bubble" hidden></div>
 <div id="toast" hidden></div>
+<div id="death" hidden>死亡した<small>あなたは脱落しました</small></div>
 <div id="hud" hidden><button id="rid" title="タップでコピー"></button><span id="cnt"></span><button id="roleBtn" hidden>役職</button><button id="leave">退出</button></div>
 <div id="phase" hidden><span id="phaseTxt"></span> <b id="timer"></b></div>
 <div id="chat" hidden><div id="act" hidden></div><div id="log"></div><div id="chatRow"><input id="chatIn" maxlength="60" placeholder="発言（昼の話し合い）" autocomplete="off"><button class="go" id="chatSend">送信</button><button class="go" id="dayPass" hidden>昼をパス</button></div></div>
@@ -101,10 +106,10 @@ const EYEC=[0x2a1a1a,0x2f6fd0,0x2a9a6a,0x8a4ad0,0xb05a3a,0x6a4a2a,0x1aa8c8,0xd0a
 const NAMES=['ミコト','ルナ','ハル','ソラ','ココ','レン','ユイ','ノア','リク','モモ','カイ','サクラ','トア','ミナ','ロウ','アオイ'];
 const ball=(r,m,x,y,z,sx=1,sy=1,sz=1)=>{const o=new THREE.Mesh(new THREE.SphereGeometry(r,16,12),m);o.position.set(x,y,z);o.scale.set(sx,sy,sz);return o;};
 function limb(a,b,r,m,r2){const d=new THREE.Vector3().subVectors(b,a),o=new THREE.Mesh(new THREE.CylinderGeometry(r2||r,r,d.length(),10),m);o.position.copy(a).add(b).multiplyScalar(.5);o.quaternion.setFromUnitVectors(V(0,1,0),d.normalize());return o;}
-function label(text){
+function label(text,color='#efe8dc'){
   const c=document.createElement('canvas');c.width=256;c.height=64;const x=c.getContext('2d');
   x.fillStyle='rgba(20,17,34,.8)';x.beginPath();x.roundRect?x.roundRect(4,8,248,48,14):x.rect(4,8,248,48);x.fill();
-  x.fillStyle='#efe8dc';x.font='bold 26px sans-serif';x.textAlign='center';x.textBaseline='middle';x.fillText(text,128,33);
+  x.fillStyle=color;x.font='bold 26px sans-serif';x.textAlign='center';x.textBaseline='middle';x.fillText(text,128,33);
   const s=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(c),transparent:true,depthTest:false}));s.scale.set(1.2,.3,1);return s;
 }
 function makeChair(){
@@ -114,7 +119,7 @@ function makeChair(){
   [[-.35,-.35],[.35,-.35],[-.35,.35],[.35,.35]].forEach(([x,z])=>{const l=new THREE.Mesh(new THREE.BoxGeometry(.08,.5,.08),woodMat);l.position.set(x,.25,z);g.add(l);});
   return g;
 }
-function makeCharacter(i,name){
+function makeCharacter(i,name,red=false){
   const g=new THREE.Group();
   const sk=M(SKIN[(i*5)%6],.75), hair=M(HAIR[(i*3)%8],.55), hue=(i*.618)%1;
   const outfit=M(new THREE.Color().setHSL(hue,.45+(i%3)*.1,.45)), acc=M(new THREE.Color().setHSL((hue+.5)%1,.65,.5));
@@ -169,8 +174,8 @@ function makeCharacter(i,name){
   head.children.slice(n0).forEach(o=>decor.push(o));
   head.traverse(m=>{m.castShadow=true;});
   g.add(head);
-  const tag=label(name||NAMES[i%16]);tag.position.set(0,1.85,0);g.add(tag);
-  g.userData={head,tag,eyes,decor,ra,outfit,sk};
+  const tag=label(name||NAMES[i%16],red?'#ff7070':'#efe8dc');tag.position.set(0,1.85,0);g.add(tag);
+  g.userData={head,tag,eyes,decor,ra,outfit,sk,tagRed:red};
   return g;
 }
 
@@ -534,7 +539,23 @@ function buildTable(n){
     c.userData={baseY:1.1+k*.02,delay:.3+k*.05};c.position.set(Math.sin(k*3.7)*.035,c.userData.baseY+1,Math.cos(k*2.3)*.035);c.rotation.y=Math.sin(k*2.1)*.4;world.add(c);cards.push(c);}
   startBtn=makeStartBtn();startBtn.position.set(0,1.07,R-.4);world.add(startBtn);setBtn('待機',false);
 }
-function markDead(c,name){c.userData.dead=true;c.userData.head.rotation.x=.8;c.remove(c.userData.tag);const t=label('✝ '+name);t.position.set(0,1.7,0);c.add(t);c.userData.tag=t;}
+function markDead(c,name){
+  c.userData.dead=true;c.remove(c.userData.tag);
+  // 本体を隠し、体の色をした破片を飛ばしてバラバラになる
+  c.traverse(o=>{if(o!==c)o.visible=false;});
+  const burst=new THREE.Group(),parts=[];
+  const mats=[c.userData.outfit,c.userData.sk,M(0x3b2730),M(0xd3ab5f)];
+  for(let i=0;i<18;i++){
+    const q=new THREE.Mesh(new THREE.BoxGeometry(.07+Math.random()*.1,.07+Math.random()*.1,.07+Math.random()*.1),mats[i%mats.length]);
+    q.position.set((Math.random()-.5)*.45,.35+Math.random()*1.2,(Math.random()-.5)*.35);
+    q.rotation.set(Math.random()*6,Math.random()*6,Math.random()*6);
+    q.userData.v=V((Math.random()-.5)*2.8,.8+Math.random()*2.8,(Math.random()-.5)*2.8);
+    q.userData.r=V((Math.random()-.5)*10,(Math.random()-.5)*10,(Math.random()-.5)*10);
+    burst.add(q);parts.push(q);
+  }
+  c.add(burst);c.userData.explode={parts,t:0,tag:null};
+  const t=label('✝ '+name,c.userData.tagRed?'#ff7070':'#efe8dc');t.position.set(0,1.7,0);t.visible=false;c.add(t);c.userData.tag=t;c.userData.explode.tag=t;
+}
 // 発言: 右手で看板を5秒間かかげる。看板の向きは話している人の視線に追従する（表も裏も読める）
 function showSign(i,text){
   const c=chars[i];if(!c)return;const u=c.userData;let s=u.sign;
@@ -624,10 +645,18 @@ function stepRoleCard(t){
 // ホーム画面の背景（8人が座る円卓）
 buildTable(8);sync(Array.from({length:8},()=>({})));
 
-let ph='',dy=0,seen=0,myRole=null,mates=[],endAt=0,dead=false,seerUsed=false;
+let ph='',dy=0,seen=0,myRole=null,mates=[],endAt=0,dead=false,seerUsed=false,voteDone=false;
 function mateNames(){return mates.filter(id=>id!==room.me).map(id=>state.players.find(p=>p.id===id).name);}
+function refreshWolfTags(){
+  if(!state)return;
+  chars.forEach((c,i)=>{const p=state.players[i];if(!c||!p||c.userData.dead)return;
+    const red=myRole==='wolf'&&(p.id===room.me||mates.includes(p.id));
+    if(c.userData.tagRed===red)return;
+    const old=c.userData.tag,tag=label(p.name,red?'#ff7070':'#efe8dc');tag.position.copy(old.position);c.remove(old);c.add(tag);c.userData.tag=tag;c.userData.tagRed=red;
+  });
+}
 function onPriv(m){
-  if(m.role){myRole=m.role;mates=m.mates||[];giveRoleCard(myRole,mateNames());$('roleBtn').hidden=false;}
+  if(m.role){myRole=m.role;mates=m.mates||[];giveRoleCard(myRole,mateNames());$('roleBtn').hidden=false;refreshWolfTags();}
   if(m.used)seerUsed=true;
   if(m.msg)addLog('【能力】'+m.msg,'sys');
 }
@@ -640,7 +669,7 @@ function onState(s){
   }
   startBtn.visible=false;
   s.log.slice(seen).forEach(t=>addLog(t,'sys'));seen=s.log.length;
-  const me=s.players[mySeat];if(me&&me.alive===false&&!dead){dead=true;addLog('あなたは脱落しました。最後まで見守りましょう。','sys');}
+  const me=s.players[mySeat];if(me&&me.alive===false&&!dead){dead=true;addLog('あなたは脱落しました。最後まで見守りましょう。','sys');const d=$('death');d.hidden=false;clearTimeout(d.hideT);d.hideT=setTimeout(()=>d.hidden=true,4200);}
   if(s.phase!==ph||s.day!==dy){ph=s.phase;dy=s.day;onPhase(s);}
 }
 // 時間帯ごとの背景（夜・朝・昼・夕方で空の色と明るさが変わる）
@@ -667,7 +696,7 @@ function actionsFor(p){
   const s=state,me=s&&s.players[mySeat];
   if(!s||!s.started||!me||me.alive===false||p.id===room.me||p.alive===false)return[];
   const out=[];
-  if(s.phase==='vote'&&(!s.cands||s.cands.includes(p.id)))out.push({k:'vote',t:'投票'},{k:'pass',t:'パス'});
+  if(s.phase==='vote'&&!voteDone&&(!s.cands||s.cands.includes(p.id)))out.push({k:'vote',t:'投票'},{k:'pass',t:'パス'});
   if(s.phase==='day'||s.phase==='vote'){
     if(myRole==='wolf'&&!attackDone&&!mates.includes(p.id))out.push({k:'attack',t:'殺害'});
     if(myRole==='knight'&&!guardDone)out.push({k:'guard',t:'守る'});
@@ -697,10 +726,10 @@ function openBubble(i){
   b.hidden=false;
 }
 function doAct(k,p){
-  if(k==='pass'){room.act('pass',null);addLog('パスしました','sys');}
+  if(k==='pass'){voteDone=true;room.act('pass',null);addLog('パスしました','sys');}
   else{
     room.act(k,p.id);
-    if(k==='vote')addLog(p.name+'さんに投票しました','sys');
+    if(k==='vote'){voteDone=true;addLog(p.name+'さんに投票しました','sys');}
     if(k==='attack'){attackDone=true;addLog(p.name+'さんの殺害を確定しました（夜になると実行されます）','sys');}
     if(k==='guard'){guardDone=true;addLog(p.name+'さんを守ります（次の夜の襲撃から）','sys');}
     if(k==='inspect'){seerUsed=true;addLog(p.name+'さんを占いました','sys');}
@@ -711,7 +740,7 @@ function doAct(k,p){
 function onPhase(s){
   const P=PAL[s.phase]||PAL.deal;
   bgT.set(P.bg);hcT.set(P.hc);hemiT=P.hemi;lampT=P.lamp;starT=P.star;phaseT0=Date.now();
-  endAt=s.phase==='end'?0:Date.now()+s.dur*1000;hideAct();hideBubble();clearVotes();$('dayPass').hidden=true;$('dayPass').disabled=false;
+  endAt=s.phase==='end'?0:Date.now()+s.dur*1000;hideAct();hideBubble();clearVotes();if(s.phase==='vote')voteDone=false;$('dayPass').hidden=true;$('dayPass').disabled=false;
   const T={deal:'カードが配られました',night:s.day+'日目の夜',day:s.day+'日目の昼 — 話し合い',vote:s.cands?'決選投票':'投票',result:'投票結果',end:'ゲーム終了'};
   $('phase').hidden=false;$('phaseTxt').textContent=T[s.phase];
   if(s.phase==='night'){attackDone=guardDone=false;}
@@ -721,7 +750,7 @@ function onPhase(s){
   const me=s.players[mySeat];if(!me||!me.alive)return;
   if(s.phase==='day'){
     $('dayPass').hidden=false;$('dayPass').disabled=false;
-    $('dayPass').onclick=()=>{room.act('daypass',null);$('dayPass').disabled=true;addLog('昼をパスしました','sys');};
+    $('dayPass').onclick=()=>{room.act('daypass',null);$('dayPass').hidden=true;addLog('昼をパスしました','sys');};
     addLog(s.players.some(p=>p.alive&&p.npc)?'NPCがいるため、誰か1人が「昼をパス」すると投票へ進みます。':'全員が「昼をパス」すると投票へ進みます。','sys');
     if(myRole==='wolf')addLog('【人狼】殺害したい相手をタップして「殺害」で確定。夜になると実行されます。','sys');
     else if(myRole==='knight')addLog('【騎士】守りたい相手をタップして「守る」で確定。次の夜の襲撃から守れます。','sys');
@@ -801,6 +830,7 @@ let lookT=0,lk={y:0,p:0};const cl=(v,a)=>Math.max(-a,Math.min(a,v));
 function loop(t){
   const dt=Math.min(.05,(t-last)/1000);last=t;spawnT+=dt;
   chars.forEach((c,i)=>{if(!c)return;const u=c.userData,k=Math.min(1,(t-u.born)/350);c.scale.setScalar(Math.max(.001,1-Math.pow(1-k,3)));
+    if(u.explode){u.explode.t+=dt;u.explode.parts.forEach(q=>{q.position.addScaledVector(q.userData.v,dt);q.userData.v.y-=5*dt;q.rotation.x+=q.userData.r.x*dt;q.rotation.y+=q.userData.r.y*dt;q.rotation.z+=q.userData.r.z*dt;});if(u.explode.t>2){u.explode.parts.forEach(q=>q.visible=false);u.explode.tag.visible=true;}}
     const s=t*.001;
     // 頭の向き: 自分は操作中の視点、NPCはゆっくりきょろきょろ、他プレイヤーは受信した視線
     if(i===mySeat)u.look={yaw:cam.yaw,pitch:cam.pitch};
