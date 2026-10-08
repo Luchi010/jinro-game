@@ -25,10 +25,12 @@ button{font-family:inherit;cursor:pointer}
 input{flex:1;min-width:0;height:44px;border-radius:10px;border:1px solid rgba(211,171,95,.5);background:rgba(0,0,0,.35);color:var(--ink);font-size:18px;letter-spacing:.2em;padding:0 12px;text-transform:uppercase;font-family:inherit}
 input::placeholder{letter-spacing:0;text-transform:none;opacity:.5}
 #msg{margin:0;min-height:1.2em;text-align:center;color:#ff9a9a;font-size:14px}
-#hud{position:fixed;top:0;left:0;right:0;display:flex;gap:10px;align-items:center;padding:calc(10px + env(safe-area-inset-top,0px)) 12px 0}
+#hud{position:fixed;top:0;left:0;right:0;display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:calc(10px + env(safe-area-inset-top,0px)) 12px 0}
 #home[hidden],#hud[hidden],#phase[hidden],#chat[hidden],#act[hidden],.ov[hidden]{display:none}
-#hud button,#hud span{background:var(--panel);border:1px solid rgba(211,171,95,.45);color:var(--ink);border-radius:10px;padding:8px 12px;font-size:15px}
-#rid{letter-spacing:.25em;color:var(--gold);font-weight:800;font-size:20px}
+#hud button,#hud span{background:var(--panel);border:1px solid rgba(211,171,95,.45);color:var(--ink);border-radius:10px;padding:7px 9px;font-size:14px}
+#hud button[hidden]{display:none}
+#hud #npcBtn.on{background:var(--gold);color:#1a1405}
+#rid{letter-spacing:.2em;color:var(--gold);font-weight:800;font-size:20px}
 #cnt{margin-right:auto}
 
 #nameIn{flex:none;width:100%;letter-spacing:.05em;text-transform:none;background:var(--panel)}
@@ -52,7 +54,7 @@ input::placeholder{letter-spacing:0;text-transform:none;opacity:.5}
 .total{text-align:right;font-size:14px;opacity:.8}
 #bubble{position:fixed;left:0;top:0;display:flex;gap:6px;transform:translate(-50%,-100%);z-index:5}
 #bubble[hidden]{display:none}
-#toast{position:fixed;left:50%;top:38%;transform:translateX(-50%);background:var(--panel);border:1px solid var(--gold);padding:10px 16px;border-radius:12px;font-size:15px;z-index:6;pointer-events:none;max-width:80vw;text-align:center}
+#toast{position:fixed;left:50%;top:38%;transform:translateX(-50%);background:var(--panel);border:1px solid var(--gold);padding:10px 16px;border-radius:12px;font-size:15px;z-index:9;pointer-events:none;max-width:80vw;text-align:center}
 #toast[hidden]{display:none}
 #death{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(70,0,0,.72);color:#ffb0b0;font-family:serif;font-size:clamp(64px,20vw,150px);font-weight:800;letter-spacing:.12em;text-shadow:0 0 24px #f00,4px 4px 0 #300;z-index:20;pointer-events:none;animation:deathFlash .7s ease-out}
 #death small{font-size:clamp(16px,4vw,28px);letter-spacing:.12em;color:#fff;margin-top:12px}
@@ -60,6 +62,20 @@ input::placeholder{letter-spacing:0;text-transform:none;opacity:.5}
 @keyframes deathFlash{0%{opacity:0;transform:scale(1.5)}45%{opacity:1;transform:scale(1)}100%{opacity:1}}
 #bubble button{padding:9px 16px;border-radius:10px;border:1px solid var(--gold);background:var(--panel);color:var(--ink);font-size:17px;font-weight:800;box-shadow:0 2px 10px #000a}
 #bubble button.kill{background:#8a1c1c;border-color:#ff8a8a}
+/* 移動スティック・チートメニュー */
+#stick{position:fixed;left:18px;bottom:calc(24vh + 74px + env(safe-area-inset-bottom,0px));width:124px;height:124px;border-radius:50%;background:rgba(18,14,30,.45);border:2px solid rgba(211,171,95,.5);touch-action:none;z-index:7}
+#stick[hidden]{display:none}
+#stick i{position:absolute;left:50%;top:50%;width:52px;height:52px;margin:-26px 0 0 -26px;border-radius:50%;background:rgba(211,171,95,.75);pointer-events:none}
+#cheat{position:fixed;left:8px;right:8px;top:calc(58px + env(safe-area-inset-top,0px));max-height:62vh;overflow:auto;touch-action:pan-y;background:rgba(14,11,26,.94);border:1px solid var(--gold);border-radius:14px;padding:10px 12px;z-index:8;font-size:15px}
+#cheat[hidden]{display:none}
+#cheat h4{margin:12px 0 6px;color:var(--gold);font-size:14px}
+#cheat h4:first-child{margin-top:0}
+#cheat .g{display:flex;flex-wrap:wrap;gap:6px}
+#cheat button{padding:8px 11px;border-radius:8px;border:1px solid var(--gold);background:none;color:var(--ink);font-size:14px}
+#cheat button.on{background:var(--gold);color:#1a1405}
+#cheat button.sel{background:#2d4a66;border-color:#9fd3ff}
+#cheat .sw{display:flex;align-items:center;justify-content:space-between;margin:4px 0;gap:8px}
+#cheat .sw button{min-width:64px}
 </style>
 <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 <script>window.Peer||document.write('<script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.2/dist/peerjs.min.js"><\/script>')</script>
@@ -68,7 +84,7 @@ input::placeholder{letter-spacing:0;text-transform:none;opacity:.5}
 <div id="stage"></div>
 <main id="home">
   <h1>人狼ゲーム</h1>
-  <div id="version">ver. 1.4.0</div>
+  <div id="version">ver. 1.5.0</div>
   <div class="actions">
     <input id="nameIn" maxlength="8" placeholder="プレイヤー名" autocomplete="off">
     <button class="big" id="bCreate">部屋を作る</button>
@@ -84,16 +100,18 @@ input::placeholder{letter-spacing:0;text-transform:none;opacity:.5}
     </div>
     <button class="big alt" id="bJoin">部屋に入る</button>
     <div class="pane" id="pJoin" hidden>
-      <input id="ridIn" maxlength="5" placeholder="部屋ID（例 XCDFR）" autocapitalize="characters" autocomplete="off">
+      <input id="ridIn" maxlength="6" placeholder="部屋ID（例 XCDFR）" autocapitalize="characters" autocomplete="off">
       <button class="go" id="goJoin">参加</button>
     </div>
     <p id="msg"></p>
   </div>
 </main>
 <div id="bubble" hidden></div>
+<div id="stick" hidden><i></i></div>
+<div id="cheat" hidden></div>
 <div id="toast" hidden></div>
 <div id="death" hidden>死亡した<small>あなたは脱落しました</small></div>
-<div id="hud" hidden><button id="rid" title="タップでコピー"></button><span id="cnt"></span><button id="roleBtn" hidden>役職</button><button id="leave">退出</button></div>
+<div id="hud" hidden><button id="rid" title="タップでコピー"></button><span id="cnt"></span><button id="npcBtn" hidden>NPC OFF</button><button id="roleBtn" hidden>役職</button><button id="cheatBtn" hidden>☰</button><button id="leave">退出</button></div>
 <div id="phase" hidden><span id="phaseTxt"></span> <b id="timer"></b></div>
 <div id="chat" hidden><div id="act" hidden></div><div id="log"></div><div id="chatRow"><input id="chatIn" maxlength="60" placeholder="発言（昼の話し合い）" autocomplete="off"><button class="go" id="chatSend">送信</button><button class="go" id="dayPass" hidden>昼をパス</button></div></div>
 <div id="role" class="ov" hidden><div class="rcard"><small>あなたにしか見えません</small><b id="roleName"></b><p id="roleInfo"></p><small>タップで閉じる</small></div></div>
@@ -261,7 +279,8 @@ function openClient(id,me,onMsg){
 class Room{
   constructor(){
     this.me=Math.random().toString(36).slice(2,8);this.name='';this.state=null;this.host=false;this.joined=false;this.game=null;this.online=false;
-    this.onState=this.onPriv=this.onChat=this.onHostLeft=this.onLook=()=>{};
+    this.onState=this.onPriv=this.onChat=this.onHostLeft=this.onLook=this.onPos=this.onFx=()=>{};
+    this.cx={ch:new Set(),inv:new Set(),vm:{}};this.npcSeq=0;this.npcOn=false;   // チート状態（hostだけが持つ）
     addEventListener('beforeunload',()=>this.leave());
   }
   async create(cfg,name){
@@ -274,15 +293,15 @@ class Room{
     if(!this.id)throw new Error('部屋IDを発行できませんでした');
     const max=Object.values(cfg).reduce((a,b)=>a+b,0);
     this.state={id:this.id,max,cfg,started:false,players:[{id:this.me,name}]};
-    // オフライン時は空席をNPCで埋める（人が参加するとNPCと入れ替わる）
-    if(!this.online){for(let i=1;i<max;i++)this.state.players.push({id:'npc'+i,name:NAMES[i%16],npc:true});}
+    // オフライン時は空席をNPCで埋める（人が参加するとNPCと入れ替わる）。オンラインでは「NPC」ボタンで切り替え
+    if(!this.online)this.fillNpc(true);
   }
   async join(id,name){
     this.name=name;this.id=id;
     const r=await openClient(id,this.me,m=>this._on(m));this.t=r.t;this.online=r.online;
     if(this.online)this.t.onClose=()=>this.onHostLeft();
     return new Promise((ok,ng)=>{
-      this._ok=ok;this._ng=e=>{try{this.t.close();}catch(_){}ng(e);};this.t.toHost({t:'join',from:this.me,name});
+      this._ok=ok;this._ng=e=>{try{this.t.close();}catch(_){}ng(e);};this.t.toHost({t:'join',from:this.me,name,ch:!!cheater});
       setTimeout(()=>{if(!this.joined){this.t.close();ng(new Error('部屋が見つからないか、満員です'));}},3000);
     });
   }
@@ -290,6 +309,7 @@ class Room{
     if(this.host){
       const s=this.state;
       if(m.t==='join'){
+        if(m.ch)this.cx.ch.add(m.from);
         const known=s.players.some(p=>p.id===m.from);
         if(!known&&s.started){this.t.sendTo(m.from,{t:'reject',reason:'started'});return;}   // 開始後は入れない
         if(!known&&s.players.length>=s.max){
@@ -300,17 +320,19 @@ class Room{
         if(!known)s.players.push({id:m.from,name:m.name});
         this._pub();
       }else if(m.t==='leave'){
-        if(!s.started){s.players=s.players.filter(p=>p.id!==m.from);}
+        if(!s.started){s.players=s.players.filter(p=>p.id!==m.from);if(this.npcOn)this.fillNpc(true);}
         else{const p=s.players.find(x=>x.id===m.from);if(!p||p.alive===false)return;p.alive=false;if(this.game){this.game.onLeave(p.id);return;}}
         this._pub();
       }else if(m.t==='act'&&this.game)this.game.act(m);
       else if(m.t==='chat'){this.onChat(m);this.t.broadcast(m);}   // 発言は全員に中継
-      else if(m.t==='look'){this.onLook(m);this.t.broadcast(m);}   // 視線も全員に中継
+      else if(m.t==='look'){this.onLook(m);this.t.broadcast(m);}else if(m.t==='pos'){this.onPos(m);this.t.broadcast(m);}else if(m.t==='cx')this._cheat(m);   // 視線・位置も全員に中継
       return;
     }
     if(m.t==='reject'){if(this._ng){const g=this._ng;this._ng=null;g(new Error(m.reason==='started'?'もう開始されています':'満員です'));}}
     else if(m.t==='chat')this.onChat(m);
     else if(m.t==='look')this.onLook(m);
+    else if(m.t==='pos')this.onPos(m);
+    else if(m.t==='fx')this.onFx(m);
     else if(m.t==='priv'){if(m.to===this.me)this.onPriv(m);}
     else if(m.t==='state'){
       this.state=m.s;
@@ -319,6 +341,54 @@ class Room{
     }
   }
   _pub(){this.t.broadcast({t:'state',s:this.state});this.onState(this.state);}
+  // NPCで空席を埋める／全員外す（開始前のみ）
+  fillNpc(on){
+    const s=this.state;this.npcOn=on;
+    if(!on){s.players=s.players.filter(p=>!p.npc);return;}
+    let i=0;
+    while(s.players.length<s.max){
+      const n=NAMES.find(x=>!s.players.some(p=>p.name===x))||'NPC'+(++i);
+      s.players.push({id:'npc'+(++this.npcSeq),name:n,npc:true});
+    }
+  }
+  setNpc(on){if(!this.host||this.state.started)return;this.fillNpc(on);this._pub();}
+  // ---- チート（部屋ID末尾に > を付けて参加した人だけ。チャットやログには一切出さない）----
+  cheat(k,o){const m=Object.assign({t:'cx',from:this.me,k},o);this.host?this._cheat(m):this.t.toHost(m);}
+  pos(o){const m=Object.assign({t:'pos',from:this.me},o);this.host?this.t.broadcast(m):this.t.toHost(m);}
+  _fx(o){const m=Object.assign({t:'fx'},o);this.t.broadcast(m);this.onFx(m);}
+  _cheat(m){
+    const x=this.cx,s=this.state,g=this.game;if(!s||!x.ch.has(m.from))return;
+    const pl=id=>s.players.find(p=>p.id===id),me=pl(m.from),tg=pl(m.target);
+    switch(m.k){
+      case 'inv':m.on?x.inv.add(m.from):x.inv.delete(m.from);break;
+      case 'vw':x.vm[m.from]=Math.max(1,Math.min(99,m.n|0||1));break;
+      case 'club':this._fx({k:'club',from:m.from,on:!!m.on});break;
+      case 'peek':
+        if(g&&tg&&g.role[tg.id]){this.priv(m.from,{peek:{name:tg.name,role:g.role[tg.id]}});this._fx({k:'take',target:tg.id,by:m.from});}
+        break;
+      case 'smash':
+        if(tg&&me&&tg.id!==me.id){
+          this._fx({k:'smash',from:me.id,target:tg.id});
+          if(g&&s.phase!=='end'&&tg.alive)setTimeout(()=>g.cheatKill(tg.id),450);   // 振り下ろしてから死ぬ
+        }
+        break;
+      case 'vmove':   // 今入っている票を全部、選んだ人に移す（自分の票も）
+        if(g&&s.phase==='vote'&&me&&me.alive&&tg&&tg.alive){
+          Object.keys(g.votes).forEach(k=>{if(g.votes[k])g.votes[k]=tg.id;});g.votes[me.id]=tg.id;
+          if(Object.keys(g.votes).length>=g.alive().length)g.adv();else this._pub();
+        }
+        break;
+      case 'swap':    // 自分と選んだ人の役職を入れ替える
+        if(g&&me&&tg&&tg.id!==me.id&&g.role[me.id]&&g.role[tg.id]&&s.phase!=='end'){
+          const a=me.id,b=tg.id;[g.role[a],g.role[b]]=[g.role[b],g.role[a]];
+          [a,b].forEach(id=>{g.used.delete(id);g.sheriffUsed.delete(id);g.kdone.delete(id);delete g.atk[id];});
+          g.sendRoles([a,b]);g.win();
+        }
+        break;
+      case 'revive':if(g&&tg&&!tg.alive&&s.phase!=='end'){tg.alive=true;this._pub();}break;
+      case 'reroll':if(g&&s.phase!=='end')g.reroll();break;
+    }
+  }
   start(){if(this.host&&!this.state.started&&this.state.players.length>=1){this.game=new Game(this);this.game.start();}}
   act(kind,target){const m={t:'act',from:this.me,kind,target};this.host?this.game.act(m):this.t.toHost(m);}
   priv(to,d){if(String(to).startsWith('npc'))return;const m=Object.assign({t:'priv',to},d);to===this.me?this.onPriv(m):this.t.sendTo(to,m);}
@@ -365,13 +435,17 @@ class Game{
   phase(name,dur,next){const s=this.s;s.phase=name;s.dur=dur;this.next=next;clearTimeout(this.timer);this.timer=setTimeout(next,dur*1000);this.r._pub();}
   adv(){clearTimeout(this.timer);this.next();}
   start(){
-    const s=this.s,roles=makeRoles(s.players.length,s.cfg);
-    if(s.players.length===1){const pool=[];Object.keys(s.cfg).forEach(k=>{for(let i=0;i<s.cfg[k];i++)pool.push(k);});roles[0]=pool[Math.random()*pool.length|0];}   // 1人テスト: 設定した役職からランダム
+    const s=this.s,roles=this.rollRoles();
     s.started=true;s.day=0;s.log=[];s.cands=null;s.result=null;this.dayPass={};
     s.players.forEach((p,i)=>{p.alive=true;this.role[p.id]=roles[i];});
     const wolves=s.players.filter(p=>this.isW(p.id)).map(p=>p.id);
     s.players.forEach(p=>this.r.priv(p.id,{role:this.role[p.id],mates:this.isW(p.id)?wolves:[]}));
     this.phase('deal',10,()=>this.night());
+  }
+  rollRoles(){
+    const s=this.s,roles=makeRoles(s.players.length,s.cfg);
+    if(s.players.length===1){const pool=[];Object.keys(s.cfg).forEach(k=>{for(let i=0;i<s.cfg[k];i++)pool.push(k);});roles[0]=pool[Math.random()*pool.length|0];}   // 1人テスト: 設定した役職からランダム
+    return roles;
   }
   // 夜になった瞬間に、昼のうちに確定した襲撃（と騎士の護衛）を実行する
   night(){
@@ -381,7 +455,7 @@ class Game{
       const c={};
       Object.keys(this.atk).forEach(w=>{const wp=s.players.find(p=>p.id===w);if(wp&&wp.alive){const t=this.atk[w];c[t]=(c[t]||0)+1;}});
       const t=this.pick(c),tp=t&&s.players.find(p=>p.id===t);
-      if(tp&&tp.alive&&!this.guards.has(t)){tp.alive=false;this.nightDead=t;}
+      if(tp&&tp.alive&&!this.guards.has(t)&&!this.r.cx.inv.has(t)){tp.alive=false;this.nightDead=t;}
     }
     this.atk={};this.guards=new Set();this.kdone=new Set();
     if(this.win())return;
@@ -406,8 +480,8 @@ class Game{
     const tg=s.players.find(x=>x.id===m.target&&x.alive);if(!tg)return;
     const pre=s.phase==='day'||s.phase==='vote';   // 夜になる前なら能力を使える
     if(pre&&m.kind==='shoot'&&ro==='sheriff'&&tg.id!==p.id&&!this.sheriffUsed.has(p.id)){
-      this.sheriffUsed.add(p.id);tg.alive=false;s.log.push(p.name+'さん（保安官）が'+tg.name+'さんを撃ちました。');
-      if(this.role[tg.id]!=='wolf'&&this.role[tg.id]!=='madman'){p.alive=false;s.log.push('保安官は人狼・狂人以外を撃ったため死亡しました。');}
+      this.sheriffUsed.add(p.id);if(!this.r.cx.inv.has(tg.id))tg.alive=false;s.log.push(p.name+'さん（保安官）が'+tg.name+'さんを撃ちました。');
+      if(this.role[tg.id]!=='wolf'&&this.role[tg.id]!=='madman'){if(!this.r.cx.inv.has(p.id)){p.alive=false;s.log.push('保安官は人狼・狂人以外を撃ったため死亡しました。');}}
       if(this.win())return;this.r._pub();return;
     }
     if(pre&&m.kind==='attack'&&ro==='wolf'&&!this.isW(tg.id)&&!(p.id in this.atk))this.atk[p.id]=tg.id;
@@ -455,15 +529,36 @@ class Game{
   vote(cands){this.votes={};this.s.cands=cands||null;this.s.result=null;this.phase('vote',40,()=>this.tally());this.npcVote();}
   tally(){
     const s=this.s,c={};let pass=0;
-    Object.values(this.votes).forEach(t=>{if(t)c[t]=(c[t]||0)+1;else pass++;});
+    Object.keys(this.votes).forEach(v=>{const t=this.votes[v];if(t)c[t]=(c[t]||0)+(this.r.cx.vm[v]||1);else pass++;});
     const k=Object.keys(c),mx=Math.max(0,...k.map(x=>c[x])),tied=k.filter(x=>c[x]===mx);
     s.log.push('投票結果: '+(k.map(i=>this.nm(i)+' '+c[i]+'票').join('、')||'なし')+(pass?'（パス'+pass+'人）':''));
     let again=null,ex=null;
     if(tied.length>1&&!s.cands){s.log.push('同票です。決選投票を行います。');again=tied;}
-    else if(tied.length===1){ex=tied[0];s.players.find(p=>p.id===ex).alive=false;this.lastEx=ex;s.log.push(this.nm(ex)+'さんが処刑されました。');}
+    else if(tied.length===1&&!this.r.cx.inv.has(tied[0])){ex=tied[0];s.players.find(p=>p.id===ex).alive=false;this.lastEx=ex;s.log.push(this.nm(ex)+'さんが処刑されました。');}
     else s.log.push('処刑は行われませんでした。');
     s.cands=null;s.result={counts:c,pass,ex};
     this.phase('result',8,()=>{if(again)return this.vote(again);if(!this.win())this.night();});   // 結果発表（頭の上に票数）
+  }
+  // ---- チート用: 殴殺・役職の再送・配り直し ----
+  cheatKill(id){
+    const s=this.s,p=s.players.find(x=>x.id===id);
+    if(!p||!p.alive||this.r.cx.inv.has(id)||s.phase==='end')return;
+    p.alive=false;delete this.atk[id];delete this.votes[id];
+    if(this.win())return;
+    if(s.phase==='vote'&&Object.keys(this.votes).length>=this.alive().length)this.adv();else this.r._pub();
+  }
+  sendRoles(ids){
+    const s=this.s,wolves=s.players.filter(p=>this.isW(p.id)).map(p=>p.id);
+    s.players.forEach(p=>{
+      if(ids.includes(p.id))this.r.priv(p.id,{role:this.role[p.id],mates:this.isW(p.id)?wolves:[]});
+      else if(this.isW(p.id))this.r.priv(p.id,{mates:wolves});   // 仲間リストだけ更新
+    });
+  }
+  reroll(){
+    const s=this.s,roles=this.rollRoles();
+    s.players.forEach((p,i)=>{this.role[p.id]=roles[i];});
+    this.used.clear();this.sheriffUsed.clear();this.kdone.clear();this.atk={};this.guards=new Set();
+    this.sendRoles(s.players.map(p=>p.id));this.win();
   }
   onLeave(id){   // 退出した人は死亡扱い
     const s=this.s;s.log.push(this.nm(id)+'さんが退出しました（死亡扱い）');
@@ -514,8 +609,9 @@ const world=new THREE.Group();scene.add(world);
 const clothMat=M(0x2a1f3d,.8);
 
 let CR=4,R=3,seatN=8,chars=[],cards=[],startBtn=null,spawnT=0;
-let room=null,state=null,mySeat=-1,mode='home',N=8;
+let room=null,state=null,mySeat=-1,mode='home',N=8,cheater=false;
 const cam={yaw:0,pitch:-.35,th:.6};
+const walk={on:false,x:0,z:0,jx:0,jy:0,keys:{}};   // 歩行（チート）
 
 function cardTex(){
   const c=document.createElement('canvas');c.width=128;c.height=192;const x=c.getContext('2d');
@@ -593,14 +689,36 @@ function showSign(i,text){
   x.font='bold '+fs+'px sans-serif';
   const L=[];for(let k=0;k<text.length&&L.length<max;k+=per)L.push(text.slice(k,k+per));
   L.forEach((l,k)=>x.fillText(l,256,128+(k-(L.length-1)/2)*lh));
-  s.tex.needsUpdate=true;s.arm.visible=true;if(u.ra)u.ra.visible=false;u.tag.visible=false;clearTimeout(s.t);
-  s.t=setTimeout(()=>{s.arm.visible=false;if(u.ra)u.ra.visible=true;u.tag.visible=mode!=='home'&&i!==mySeat;},5000);
+  s.tex.needsUpdate=true;s.arm.visible=true;if(u.ra)u.ra.visible=false;if(u.club)u.club.arm.visible=false;u.tag.visible=false;clearTimeout(s.t);
+  s.t=setTimeout(()=>{s.arm.visible=false;if(u.clubOn&&u.club){u.club.arm.visible=true;if(u.ra)u.ra.visible=false;}else if(u.ra)u.ra.visible=true;u.tag.visible=mode!=='home'&&i!==mySeat;},5000);
+}
+// 右手で持つ看板の武器（チート）。腕と看板をまとめて振り下ろす
+function makeClub(c){
+  const u=c.userData;if(u.club)return u.club;
+  const S=V(-.21,1.07,0),H=V(-.3,1.3,.4),arm=new THREE.Group(),piv=new THREE.Group();
+  arm.position.copy(S);arm.rotation.order='YXZ';piv.position.copy(H).sub(S);
+  const cv=document.createElement('canvas');cv.width=256;cv.height=128;const x=cv.getContext('2d');
+  x.fillStyle='#e9d9b0';x.fillRect(0,0,256,128);x.strokeStyle='#7a1a1a';x.lineWidth=8;x.strokeRect(4,4,248,120);
+  x.fillStyle='#8a1c1c';x.font='bold 70px serif';x.textAlign='center';x.textBaseline='middle';x.fillText('天誅',128,68);
+  const fm=new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(cv)});
+  const board=new THREE.Mesh(new THREE.BoxGeometry(.9,.45,.05),woodMat);board.position.y=.85;
+  const f1=new THREE.Mesh(new THREE.PlaneGeometry(.86,.43),fm);f1.position.set(0,.85,.027);
+  const f2=new THREE.Mesh(new THREE.PlaneGeometry(.86,.43),fm);f2.position.set(0,.85,-.027);f2.rotation.y=Math.PI;
+  const stick=new THREE.Mesh(new THREE.CylinderGeometry(.025,.025,.9,8),woodMat);stick.position.y=.35;
+  piv.add(board,f1,f2,stick);
+  const el=V(-.34,1.18,.25).sub(S),hd=H.clone().sub(S);
+  arm.add(limb(V(0,0,0),el,.045,u.outfit),limb(el,hd,.04,u.outfit),ball(.045,u.sk,hd.x,hd.y,hd.z),piv);
+  arm.visible=false;c.add(arm);return u.club={arm,piv};
+}
+function setClub(i,on){
+  const c=chars[i];if(!c||c.userData.dead)return;const u=c.userData,k=makeClub(c),signUp=u.sign&&u.sign.arm.visible;
+  u.clubOn=on;k.arm.visible=on&&!signUp;if(u.ra)u.ra.visible=!(on||signUp);
 }
 function sync(list){
   for(let i=0;i<seatN;i++){
     const p=list[i];
-    if(chars[i]&&(!p||chars[i].userData.pname!==p.name)){world.remove(chars[i]);chars[i]=null;}   // NPCと入れ替わったら作り直す
-    if(p&&!chars[i]){const c=makeCharacter(i,p.name),a=i/seatN*Math.PI*2;c.position.set(Math.sin(a)*CR,0,Math.cos(a)*CR);c.rotation.y=a+Math.PI;c.userData.born=performance.now();c.userData.pname=p.name;c.scale.setScalar(.001);world.add(c);chars[i]=c;}
+    if(chars[i]&&(!p||chars[i].userData.pname!==p.name||(chars[i].userData.dead&&p.alive!==false))){world.remove(chars[i]);chars[i]=null;}   // NPCと入れ替わったら・生き返ったら作り直す
+    if(p&&!chars[i]){const c=makeCharacter(i,p.name),a=i/seatN*Math.PI*2;c.position.set(Math.sin(a)*CR,0,Math.cos(a)*CR);c.rotation.y=a+Math.PI;c.userData.born=performance.now();c.userData.pname=p.name;c.userData.sx=c.position.x;c.userData.sz=c.position.z;c.userData.sry=c.rotation.y;c.scale.setScalar(.001);world.add(c);chars[i]=c;}
     if(chars[i]&&p&&p.alive===false&&!chars[i].userData.dead)markDead(chars[i],p.name);
   }
   chars.forEach((c,i)=>{if(c){const me=mode!=='home'&&i===mySeat;c.userData.head.visible=!me;c.userData.decor.forEach(o=>o.visible=!me);c.userData.tag.visible=mode!=='home'&&!me;}});
@@ -668,12 +786,16 @@ function refreshWolfTags(){
   });
 }
 function onPriv(m){
-  if(m.role){myRole=m.role;mates=m.mates||[];sheriffDone=false;giveRoleCard(myRole,mateNames());$('roleBtn').hidden=false;refreshWolfTags();}
+  if(m.role){myRole=m.role;mates=m.mates||[];sheriffDone=false;seerUsed=false;attackDone=guardDone=false;giveRoleCard(myRole,mateNames());$('roleBtn').hidden=false;refreshWolfTags();}
+  else if(m.mates){mates=m.mates;refreshWolfTags();}
   if(m.used)seerUsed=true;
+  if(m.peek){openRole(m.peek.role);$('roleName').textContent=m.peek.name+'＝'+ROLE[m.peek.role];}   // チート: 他人のカードを覗く（自分にだけ表示）
   if(m.msg)addLog('【能力】'+m.msg,'sys');
 }
 function onState(s){
   state=s;mySeat=s.players.findIndex(p=>p.id===room.me);sync(s.players);
+  {const nb=$('npcBtn');nb.hidden=!(room.host&&!s.started);nb.textContent='NPC '+(room.npcOn?'ON':'OFF');nb.classList.toggle('on',!!room.npcOn);}
+  if(!$('cheat').hidden)drawCheat();
   $('rid').textContent=s.id;$('cnt').textContent=s.players.length+'/'+s.max+'人';
   if(!s.started){
     const n=s.players.length,ok=n>=1,txt=room.host?(ok?(n===s.max?'スタート':'強制 '+n+'/'+s.max):'待機 '+n+'/'+s.max):(ok?'ホスト待ち':'待機 '+n+'/'+s.max);
@@ -681,7 +803,7 @@ function onState(s){
   }
   startBtn.visible=false;
   s.log.slice(seen).forEach(t=>addLog(t,'sys'));seen=s.log.length;
-  const me=s.players[mySeat];if(me&&me.alive===false&&!dead){dead=true;addLog('あなたは脱落しました。最後まで見守りましょう。','sys');const d=$('death');d.hidden=false;clearTimeout(d.hideT);d.hideT=setTimeout(()=>d.hidden=true,4200);}
+  const me=s.players[mySeat];if(me&&me.alive!==false)dead=false;if(me&&me.alive===false&&!dead){dead=true;addLog('あなたは脱落しました。最後まで見守りましょう。','sys');const d=$('death');d.hidden=false;clearTimeout(d.hideT);d.hideT=setTimeout(()=>d.hidden=true,4200);}
   if(s.phase!==ph||s.day!==dy){ph=s.phase;dy=s.day;onPhase(s);}
 }
 // 時間帯ごとの背景（夜・朝・昼・夕方で空の色と明るさが変わる）
@@ -704,7 +826,7 @@ function showVotes(counts){
 function clearVotes(){chars.forEach(c=>{if(c&&c.userData.voteTag){c.remove(c.userData.voteTag);c.userData.voteTag=null;}});}
 
 // プレイヤーをタップ → 頭の上にボタン（殺害／守る／占う／投票／パス）
-function actionsFor(p){
+function actionsBase(p){
   const s=state,me=s&&s.players[mySeat];
   if(!s||!s.started||!me||me.alive===false||p.id===room.me||p.alive===false)return[];
   const out=[];
@@ -715,6 +837,11 @@ function actionsFor(p){
     if(myRole==='seer'&&!seerUsed)out.push({k:'inspect',t:'占う'});
     if(myRole==='sheriff'&&!sheriffDone)out.push({k:'shoot',t:'撃つ'});
   }
+  return out;
+}
+function actionsFor(p){
+  const out=actionsBase(p);
+  if(cheater&&CH.club&&state&&p.alive!==false&&p.id!==room.me)out.push({k:'smash',t:'殴る'});
   return out;
 }
 function toast(t){const e=$('toast');e.textContent=t;e.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>{e.hidden=true;},2200);}
@@ -735,10 +862,11 @@ function openBubble(i){
   const p=state&&state.players[i],acts=p?actionsFor(p):[];
   if(!acts.length){hideBubble();const r=p&&noActReason(p);if(r)toast(r);return;}
   selId=p.id;const b=$('bubble');b.innerHTML='';
-  acts.forEach(a=>{const e=document.createElement('button');e.textContent=a.t;if(a.k==='attack')e.className='kill';e.onclick=()=>doAct(a.k,p);b.appendChild(e);});
+  acts.forEach(a=>{const e=document.createElement('button');e.textContent=a.t;if(a.k==='attack'||a.k==='smash')e.className='kill';e.onclick=()=>doAct(a.k,p);b.appendChild(e);});
   b.hidden=false;
 }
 function doAct(k,p){
+  if(k==='smash'){room.cheat('smash',{target:p.id});hideBubble();return;}   // チート（チャットには出さない）
   if(k==='pass'){voteDone=true;room.act('pass',null);addLog('パスしました','sys');}
   else{
     room.act(k,p.id);
@@ -773,9 +901,25 @@ function onPhase(s){
   }
   if(s.phase==='vote')addLog('投票中も発言できます。処刑したい人をタップして「投票」か「パス」を押してください。','sys');
 }
+// 他プレイヤーの位置（歩行）・演出（カードを取る／看板を持つ／殴る）
+function seatOf(id){return state?state.players.findIndex(p=>p.id===id):-1;}
+function onPos(m){
+  if(m.from===room.me)return;const c=chars[seatOf(m.from)];if(!c)return;const u=c.userData;
+  if(m.off){u.walkOn=false;return;}
+  u.walkOn=true;u.wx=m.x;u.wz=m.z;u.wry=m.r;u.wp=m.p;
+}
+function onFx(m){
+  if(m.k==='take'){const c=cards[seatOf(m.target)];if(c&&c.userData.to&&!c.userData.take)c.userData.take={t0:performance.now(),by:seatOf(m.by)};}
+  else if(m.k==='club')setClub(seatOf(m.from),!!m.on);
+  else if(m.k==='smash'){
+    const ia=seatOf(m.from),a=chars[ia],b=chars[seatOf(m.target)];
+    if(a&&b&&!a.userData.dead){if(!a.userData.clubOn)setClub(ia,true);a.userData.fx={t0:performance.now(),dur:1000,tx:b.position.x,tz:b.position.z};}
+  }
+}
 function enter(){
   mode='lobby';$('home').hidden=true;$('hud').hidden=false;$('chat').hidden=false;camera.fov=70;camera.updateProjectionMatrix();
-  buildTable(room.state.max);room.onState=onState;room.onPriv=onPriv;room.onHostLeft=()=>{alert('ホストが退出したため部屋が閉じられました');location.reload();};
+  buildTable(room.state.max);room.onState=onState;room.onPriv=onPriv;room.onPos=onPos;room.onFx=onFx;$('cheatBtn').hidden=!cheater;
+  room.onHostLeft=()=>{alert('ホストが退出したため部屋が閉じられました');location.reload();};
   room.onChat=m=>{addLog(m.name+'：'+m.text,m.from===room.me?'me':'');showSign(state.players.findIndex(p=>p.id===m.from),m.text);};
   room.onLook=m=>{if(m.from===room.me)return;const i=state.players.findIndex(p=>p.id===m.from);if(chars[i])chars[i].userData.look={yaw:m.y,pitch:m.p};};
   onState(room.state);addLog(room.online?'オンライン(PeerJS)で接続しました':'オフライン動作中（同じブラウザのタブ間のみ・空席はNPCが着席）','sys');
@@ -788,6 +932,7 @@ function sendChat(){
 }
 $('chatSend').onclick=sendChat;$('chatIn').onkeydown=e=>{if(e.key==='Enter')sendChat();};
 $('roleBtn').onclick=()=>toggleRoleCard();
+$('npcBtn').onclick=()=>{if(room&&room.host)room.setNpc(!room.npcOn);};
 $('role').onclick=()=>$('role').hidden=true;$('result').onclick=()=>$('result').hidden=true;
 const say=t=>$('msg').textContent=t;
 $('bCreate').onclick=()=>{$('pCreate').hidden=!$('pCreate').hidden;$('pJoin').hidden=true;say('');};
@@ -806,25 +951,94 @@ $('goCreate').onclick=async()=>{
   try{await room.create(cfg,getName());say('');enter();}catch(e){say(e.message||'作成できませんでした');}
 };
 $('goJoin').onclick=async()=>{
-  const id=$('ridIn').value.trim().toUpperCase();if(id.length!==5)return say('部屋IDは5文字です');
+  let id=$('ridIn').value.trim().toUpperCase().replace('＞','>');
+  cheater=id.endsWith('>');if(cheater)id=id.slice(0,-1).trim();   // 末尾に > を付けるとチート参加
+  if(id.length!==5)return say('部屋IDは5文字です');
   say('接続中…');room=new Room();
   try{await room.join(id,getName());say('');enter();}catch(e){say(e.message);}
 };
 $('rid').onclick=()=>navigator.clipboard&&navigator.clipboard.writeText($('rid').textContent);
 $('leave').onclick=()=>{room&&room.leave();setTimeout(()=>location.reload(),400);};   // 退出の通知が届いてから戻る
 
+// ---- チートメニュー（結果はトーストだけ。チャット・ログには出さない）----
+const CH={sel:null,vw:1,inv:false,club:false};
+function chNeed(){if(!CH.sel||!state||!state.players.some(p=>p.id===CH.sel)){toast('リストからプレイヤーを選んでください');return null;}return CH.sel;}
+function setWalk(on){
+  if(on===walk.on)return;walk.on=on;$('stick').hidden=!on;walk.jx=walk.jy=0;walk.keys={};
+  if(on){const A=Math.max(0,mySeat)/seatN*Math.PI*2;walk.x=Math.sin(A)*CR;walk.z=Math.cos(A)*CR;}
+  else{cam.yaw=0;room.pos({off:1});}
+}
+function drawCheat(){
+  if(!cheater||!state)return;
+  const el=$('cheat'),st=el.scrollTop;el.innerHTML='';
+  const h=t=>{const e=document.createElement('h4');e.textContent=t;el.appendChild(e);};
+  const btn=(t,f,cls)=>{const b=document.createElement('button');b.textContent=t;if(cls)b.className=cls;b.onclick=f;return b;};
+  const grp=()=>{const d=document.createElement('div');d.className='g';el.appendChild(d);return d;};
+  const sw=(label,on,f)=>{const r=document.createElement('div');r.className='sw';const s=document.createElement('span');s.textContent=label;r.append(s,btn(on?'ON':'OFF',f,on?'on':''));el.appendChild(r);};
+  h('プレイヤー（選んで下のボタンを使う）');
+  const g=grp();
+  state.players.forEach(p=>g.appendChild(btn((p.alive===false?'✝ ':'')+p.name+(p.id===room.me?'（自分）':''),()=>{CH.sel=p.id;drawCheat();},p.id===CH.sel?'sel':'')));
+  h('スイッチ');
+  sw('歩く（左下のスティック）',walk.on,()=>{setWalk(!walk.on);drawCheat();});
+  sw('無敵',CH.inv,()=>{CH.inv=!CH.inv;room.cheat('inv',{on:CH.inv});drawCheat();});
+  sw('看板で殴る（相手をタップ→殴る）',CH.club,()=>{CH.club=!CH.club;room.cheat('club',{on:CH.club});drawCheat();});
+  h('選んだプレイヤーに使う');
+  const g2=grp();
+  g2.appendChild(btn('投票移動',()=>{const id=chNeed();if(!id)return;if(state.phase!=='vote')return toast('投票中のみ使えます');room.cheat('vmove',{target:id});voteDone=true;toast('票を移しました');}));
+  g2.appendChild(btn('役職入れ替え',()=>{const id=chNeed();if(!id)return;if(id===room.me)return toast('自分以外を選んでください');room.cheat('swap',{target:id});toast('役職を入れ替えました');}));
+  g2.appendChild(btn('生き返らせる',()=>{const id=chNeed();if(!id)return;room.cheat('revive',{target:id});toast('生き返らせました');}));
+  h('自分の投票で入る票数');
+  const r=document.createElement('div');r.className='sw';const sp=document.createElement('span');sp.textContent=CH.vw+'票';
+  const setVw=d=>{CH.vw=Math.max(1,Math.min(99,CH.vw+d));room.cheat('vw',{n:CH.vw});drawCheat();};
+  r.append(sp,btn('−',()=>setVw(-1)),btn('＋',()=>setVw(1)),btn('+5',()=>setVw(5)));el.appendChild(r);
+  h('全体');
+  const g3=grp();
+  g3.appendChild(btn('役職を全員配り直す',()=>{room.cheat('reroll');toast('配り直しました');}));
+  g3.appendChild(btn('閉じる',()=>{$('cheat').hidden=true;}));
+  el.scrollTop=st;
+}
+$('cheatBtn').onclick=()=>{const c=$('cheat');c.hidden=!c.hidden;if(!c.hidden)drawCheat();};
+// 移動スティック（スマホ）と WASD／矢印キー（PC）
+(function(){
+  const st=$('stick'),kn=st.firstElementChild;let pid=null;
+  const mv=e=>{const r=st.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2,Mx=46;let dx=e.clientX-cx,dy=e.clientY-cy;const d=Math.hypot(dx,dy);
+    if(d>Mx){dx*=Mx/d;dy*=Mx/d;}kn.style.transform='translate('+dx+'px,'+dy+'px)';walk.jx=dx/Mx;walk.jy=-dy/Mx;};
+  st.addEventListener('pointerdown',e=>{pid=e.pointerId;st.setPointerCapture(pid);mv(e);e.preventDefault();});
+  st.addEventListener('pointermove',e=>{if(e.pointerId===pid)mv(e);});
+  const up=e=>{if(e.pointerId!==pid)return;pid=null;kn.style.transform='';walk.jx=walk.jy=0;};
+  st.addEventListener('pointerup',up);st.addEventListener('pointercancel',up);
+  const key=e=>e.key.length===1?e.key.toLowerCase():e.key;
+  addEventListener('keydown',e=>{if(e.target.tagName==='INPUT')return;walk.keys[key(e)]=true;});
+  addEventListener('keyup',e=>{walk.keys[key(e)]=false;});
+})();
+function stepWalk(dt){
+  const ry=Math.max(0,mySeat)/seatN*Math.PI*2+cam.yaw,k=walk.keys;
+  let jx=walk.jx+((k.d||k.ArrowRight)?1:0)-((k.a||k.ArrowLeft)?1:0),jy=walk.jy+((k.w||k.ArrowUp)?1:0)-((k.s||k.ArrowDown)?1:0);
+  const m=Math.hypot(jx,jy);if(m>1){jx/=m;jy/=m;}
+  const sp=2.8*dt;
+  walk.x+=(-Math.sin(ry)*jy+Math.cos(ry)*jx)*sp;walk.z+=(-Math.cos(ry)*jy-Math.sin(ry)*jx)*sp;
+  const d=Math.hypot(walk.x,walk.z),lo=R+.4,hi=CR+9;   // テーブルにはめり込まない・遠くへ行きすぎない
+  if(d<.001){walk.x=lo;walk.z=0;}
+  else if(d<lo){walk.x*=lo/d;walk.z*=lo/d;}
+  else if(d>hi){walk.x*=hi/d;walk.z*=hi/d;}
+}
+
 // 操作: ドラッグで見回す／スタートボタンをタップ
 const el=renderer.domElement,ray=new THREE.Raycaster();let down=null;
 el.addEventListener('pointerdown',e=>{down={x:e.clientX,y:e.clientY,moved:0};el.setPointerCapture(e.pointerId);});
 el.addEventListener('pointermove',e=>{
   if(!down)return;const dx=e.clientX-down.x,dy=e.clientY-down.y;down.moved+=Math.abs(dx)+Math.abs(dy);down.x=e.clientX;down.y=e.clientY;
-  if(mode!=='home'){cam.yaw=Math.min(2.2,Math.max(-2.2,cam.yaw+dx*.005));cam.pitch=Math.min(1.1,Math.max(-1,cam.pitch+dy*.005));}
+  if(mode!=='home'){cam.yaw=walk.on?cam.yaw+dx*.005:Math.min(2.2,Math.max(-2.2,cam.yaw+dx*.005));cam.pitch=Math.min(1.1,Math.max(-1,cam.pitch+dy*.005));}
 });
 el.addEventListener('pointerup',e=>{
   const d=down;down=null;
   if(!d||d.moved>8)return;
   ray.setFromCamera(new THREE.Vector2(e.clientX/innerWidth*2-1,-(e.clientY/innerHeight)*2+1),camera);
   if(roleCard&&!roleCard.a&&ray.intersectObjects(roleCard.g.children,false).length)return toggleRoleCard();   // カードをタップ
+  if(cheater&&state&&state.started){   // チート: 他プレイヤーのカードをタップで役職を覗く（持ち主の手元からカードが取られる）
+    const hs=ray.intersectObjects(cards.filter((c,k)=>k!==mySeat&&c.visible&&c.userData.to&&!c.userData.take),false);
+    if(hs.length){const p=state.players[cards.indexOf(hs[0].object)];if(p){room.cheat('peek',{target:p.id});return;}}
+  }
   if(mode==='lobby'&&room.host&&startBtn.userData.ready&&!state.started&&ray.intersectObject(startBtn.userData.cap).length)return room.start();
   const vis=o=>{for(;o;o=o.parent)if(!o.visible)return false;return true;};
   const hit=ray.intersectObjects(chars.filter((c,i)=>c&&i!==mySeat),true).find(h=>vis(h.object));   // 自分の体は除外
@@ -835,20 +1049,40 @@ el.addEventListener('pointerup',e=>{
     chars.forEach((c,i)=>{if(!c||i===mySeat)return;const v=c.localToWorld(new THREE.Vector3(0,1.3,0)).project(camera);if(v.z>1)return;
       const d=Math.hypot((v.x*.5+.5)*innerWidth-e.clientX,(-v.y*.5+.5)*innerHeight-e.clientY);if(d<best){best=d;ci=i;}});
   }
-  if(ci>=0&&state&&state.started)openBubble(ci);else hideBubble();   // プレイヤーをタップ
+  if(ci>=0&&state&&(state.started||(cheater&&CH.club)))openBubble(ci);else hideBubble();   // プレイヤーをタップ
 });
 function resize(){renderer.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();}
 addEventListener('resize',resize);resize();
 
 let last=performance.now();
-let lookT=0,lk={y:0,p:0};const cl=(v,a)=>Math.max(-a,Math.min(a,v));
+let lookT=0,lk={y:0,p:0},posT=0,posS='';const cl=(v,a)=>Math.max(-a,Math.min(a,v));
 function loop(t){
   const dt=Math.min(.05,(t-last)/1000);last=t;spawnT+=dt;
+  const A=Math.max(0,mySeat)/seatN*Math.PI*2;
+  if(walk.on&&mode!=='home')stepWalk(dt);
   chars.forEach((c,i)=>{if(!c)return;const u=c.userData,k=Math.min(1,(t-u.born)/350);c.scale.setScalar(Math.max(.001,1-Math.pow(1-k,3)));
     if(u.explode){u.explode.t+=dt;u.explode.parts.forEach(q=>{q.position.addScaledVector(q.userData.v,dt);q.userData.v.y-=5*dt;q.rotation.x+=q.userData.r.x*dt;q.rotation.y+=q.userData.r.y*dt;q.rotation.z+=q.userData.r.z*dt;});if(u.explode.t>2){u.explode.parts.forEach(q=>q.visible=false);u.explode.tag.visible=true;}}
     const s=t*.001;
+    // 位置と体の向き: 席に座る／歩いている人は受信した位置へ。殴るときは相手の前まで踏み込む
+    if(i===mySeat){u.walkOn=walk.on;if(walk.on){u.wx=walk.x;u.wz=walk.z;u.wry=A+cam.yaw;u.wp=cam.pitch;}}
+    let gx=u.sx,gz=u.sz,gr=u.sry;
+    if(u.walkOn){gx=u.wx;gz=u.wz;gr=u.wry+Math.PI;}
+    const mk=i===mySeat?1:Math.min(1,dt*12);
+    if(u.px===undefined){u.px=gx;u.pz=gz;u.pr=gr;}
+    u.px+=(gx-u.px)*mk;u.pz+=(gz-u.pz)*mk;u.pr+=(((gr-u.pr+Math.PI)%(2*Math.PI)+2*Math.PI)%(2*Math.PI)-Math.PI)*mk;
+    let ox=u.px,oz=u.pz,orr=u.pr;
+    if(u.fx){
+      const f=u.fx,q=(t-f.t0)/f.dur;
+      if(q>=1){u.fx=null;if(u.club){u.club.piv.rotation.x=0;u.club.arm.rotation.x=0;}}
+      else{
+        const e=q<.3?q/.3:q<.7?1:(1-q)/.3,dx=f.tx-ox,dz=f.tz-oz,d=Math.hypot(dx,dz)||1,go=Math.max(0,d-.8);
+        ox+=dx/d*go*e;oz+=dz/d*go*e;orr=Math.atan2(dx,dz);
+        if(u.club){const ang=q<.2?-.5*q/.2:q<.4?-.5+2.5*(q-.2)/.2:q<.7?2:2*(1-(q-.7)/.3);u.club.piv.rotation.x=ang;u.club.arm.rotation.x=ang*.35;}
+      }
+    }
+    c.position.x=ox;c.position.z=oz;c.rotation.y=orr;
     // 頭の向き: 自分は操作中の視点、NPCはゆっくりきょろきょろ、他プレイヤーは受信した視線
-    if(i===mySeat)u.look={yaw:cam.yaw,pitch:cam.pitch};
+    if(i===mySeat)u.look={yaw:walk.on?0:cam.yaw,pitch:cam.pitch};else if(u.walkOn)u.look={yaw:0,pitch:u.wp||0};
     else if(state&&state.players[i]&&state.players[i].npc)u.look={yaw:Math.sin(s*.4+i*2.1)*.7,pitch:-.1+Math.sin(s*.3+i)*.12};
     const L=u.look||{yaw:0,pitch:0},kk=Math.min(1,dt*10);
     u.ly=(u.ly||0)+(L.yaw-(u.ly||0))*kk;u.lp=(u.lp||0)+(L.pitch-(u.lp||0))*kk;
@@ -863,7 +1097,15 @@ function loop(t){
     const b=((s+i*1.7)%3.6)<.12?.1:1;u.eyes.forEach(e=>e.scale.y=b);});
   cards.forEach(c=>{const u=c.userData;
     if(u.to){const k=Math.min(1,Math.max(0,(t-u.t0)/450));c.position.lerpVectors(u.from,u.to,k);c.position.y+=Math.sin(k*Math.PI)*.4;c.rotation.y+=(u.ry-c.rotation.y)*Math.min(1,dt*8);}
-    else{const k=Math.min(1,Math.max(0,(spawnT-u.delay)/.4));c.position.y=u.baseY+Math.pow(1-k,2);}});
+    else{const k=Math.min(1,Math.max(0,(spawnT-u.delay)/.4));c.position.y=u.baseY+Math.pow(1-k,2);}
+    if(u.take){   // チート: 覗かれたカードが持ち主の手元から浮いて、覗いた人の前へ運ばれて戻る
+      const q=(t-u.take.t0)/2800;
+      if(q>=1)u.take=null;
+      else if(u.take.by>=0){
+        const a2=u.take.by/seatN*Math.PI*2,e0=q<.25?q/.25:q<.8?1:(1-q)/.2,e=e0*e0*(3-2*e0);
+        c.position.x+=(Math.sin(a2)*(CR-.9)-c.position.x)*e;c.position.z+=(Math.cos(a2)*(CR-.9)-c.position.z)*e;c.position.y+=(1.3-c.position.y)*e;
+      }
+    }});
   stepRoleCard(t);
   if(mode!=='home'){
     if(ph==='day'&&Date.now()-phaseT0>12000)bgT.set(NOON);   // 朝焼け → 昼の青空
@@ -873,15 +1115,24 @@ function loop(t){
   }
   if(endAt)$('timer').textContent=Math.max(0,Math.ceil((endAt-Date.now())/1000));
   if(mode==='home'){cam.th+=dt*.08;camera.position.set(Math.sin(cam.th)*10,4.2,Math.cos(cam.th)*10);camera.lookAt(0,1,0);}
-  else{const a=Math.max(0,mySeat)/seatN*Math.PI*2;camera.position.set(Math.sin(a)*(CR-.06),1.38,Math.cos(a)*(CR-.06));camera.rotation.set(cam.pitch,a+cam.yaw,0);}
+  else{
+    if(walk.on)camera.position.set(walk.x,1.38,walk.z);
+    else camera.position.set(Math.sin(A)*(CR-.06),1.38,Math.cos(A)*(CR-.06));
+    camera.rotation.set(cam.pitch,A+cam.yaw,0);
+  }
   if(selId&&state){
     const i=state.players.findIndex(p=>p.id===selId),c=chars[i],b=$('bubble');
     if(c){camera.updateMatrixWorld();const v=c.localToWorld(new THREE.Vector3(0,2.1,0)).project(camera);
       if(v.z>1)b.style.visibility='hidden';else{b.style.visibility='visible';
         b.style.left=Math.min(innerWidth-70,Math.max(70,(v.x*.5+.5)*innerWidth))+'px';b.style.top=Math.max(50,(-v.y*.5+.5)*innerHeight)+'px';}}
   }
+  // 歩いている間は位置を全員へ送る（約0.1秒ごと、止まっていても1秒ごと）
+  if(walk.on&&room&&room.t&&t-posT>100){
+    const o={x:+walk.x.toFixed(2),z:+walk.z.toFixed(2),r:+(A+cam.yaw).toFixed(2),p:+cam.pitch.toFixed(2)},js=JSON.stringify(o);
+    if(js!==posS||t-posT>1000){posS=js;posT=t;room.pos(o);}
+  }
   // 自分の視点を約0.1秒ごとに全員へ送る
-  if(mode!=='home'&&room&&room.t&&t-lookT>100&&(Math.abs(cam.yaw-lk.y)>.01||Math.abs(cam.pitch-lk.p)>.01)){lookT=t;lk={y:cam.yaw,p:cam.pitch};room.look(lk.y,lk.p);}
+  if(mode!=='home'&&room&&room.t&&!walk.on&&t-lookT>100&&(Math.abs(cam.yaw-lk.y)>.01||Math.abs(cam.pitch-lk.p)>.01)){lookT=t;lk={y:cam.yaw,p:cam.pitch};room.look(lk.y,lk.p);}
   renderer.render(scene,camera);requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);
