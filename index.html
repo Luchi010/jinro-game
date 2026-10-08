@@ -385,14 +385,21 @@ class Game{
       if(Object.keys(this.dayPass).length>=need)this.adv();else this.r._pub();
       return;
     }
-    if(s.phase==='vote'&&m.kind==='pass'){this.votes[p.id]=null;if(Object.keys(this.votes).length>=this.alive().length)this.adv();return;}
+    if(s.phase==='vote'&&m.kind==='pass'){
+      this.votes[p.id]=null;
+      if(Object.keys(this.votes).length>=this.alive().length)this.adv(); // 全員投票済みなら待ち時間なしで結果発表
+      else this.r._pub();
+      return;
+    }
     const tg=s.players.find(x=>x.id===m.target&&x.alive);if(!tg)return;
     const pre=s.phase==='day'||s.phase==='vote';   // 夜になる前なら能力を使える
     if(pre&&m.kind==='attack'&&ro==='wolf'&&!this.isW(tg.id)&&!(p.id in this.atk))this.atk[p.id]=tg.id;
     else if(pre&&m.kind==='guard'&&ro==='knight'&&tg.id!==p.id&&!this.kdone.has(p.id)){this.kdone.add(p.id);this.guards.add(tg.id);}
     else if(pre&&m.kind==='inspect'&&ro==='seer'&&tg.id!==p.id&&!this.used.has(p.id)){this.used.add(p.id);this.r.priv(p.id,{used:true,msg:tg.name+'さんの役職は「'+ROLE[this.role[tg.id]]+'」です'});}
     else if(s.phase==='vote'&&m.kind==='vote'&&tg.id!==p.id&&(!s.cands||s.cands.includes(tg.id))){
-      this.votes[p.id]=tg.id;if(Object.keys(this.votes).length>=this.alive().length)this.adv();
+      this.votes[p.id]=tg.id;
+      if(Object.keys(this.votes).length>=this.alive().length)this.adv(); // 全員投票済みなら即時結果発表
+      else this.r._pub();
     }
   }
   pick(c){const k=Object.keys(c);if(!k.length)return null;const mx=Math.max(...k.map(x=>c[x])),t=k.filter(x=>c[x]===mx);return t[Math.random()*t.length|0];}
@@ -720,7 +727,7 @@ function onPhase(s){
     else if(myRole==='knight')addLog('【騎士】守りたい相手をタップして「守る」で確定。次の夜の襲撃から守れます。','sys');
     else if(myRole==='seer'&&!seerUsed)addLog('【占い師】占いたい相手をタップして「占う」（一度だけ）。','sys');
   }
-  if(s.phase==='vote')addLog('処刑したい人をタップして「投票」か「パス」を押してください。','sys');
+  if(s.phase==='vote')addLog('投票中も発言できます。処刑したい人をタップして「投票」か「パス」を押してください。','sys');
 }
 function enter(){
   mode='lobby';$('home').hidden=true;$('hud').hidden=false;$('chat').hidden=false;camera.fov=70;camera.updateProjectionMatrix();
@@ -732,7 +739,7 @@ function enter(){
 const getName=()=>$('nameIn').value.trim()||'名無し'+(10+Math.random()*90|0);
 function sendChat(){
   const v=$('chatIn').value.trim();if(!v)return;
-  if(state&&state.started){const me=state.players[mySeat];if(state.phase!=='day'||!me||!me.alive)return addLog('今は発言できません（昼の話し合い中のみ）','sys');}
+  if(state&&state.started){const me=state.players[mySeat];if((state.phase!=='day'&&state.phase!=='vote')||!me||!me.alive)return addLog('今は発言できません（昼の話し合い中と投票中のみ）','sys');}
   $('chatIn').value='';room.chat(v);
 }
 $('chatSend').onclick=sendChat;$('chatIn').onkeydown=e=>{if(e.key==='Enter')sendChat();};
