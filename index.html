@@ -86,7 +86,7 @@ input::placeholder{letter-spacing:0;text-transform:none;opacity:.5}
 <div id="toast" hidden></div>
 <div id="hud" hidden><button id="rid" title="タップでコピー"></button><span id="cnt"></span><button id="roleBtn" hidden>役職</button><button id="leave">退出</button></div>
 <div id="phase" hidden><span id="phaseTxt"></span> <b id="timer"></b></div>
-<div id="chat" hidden><div id="act" hidden></div><div id="log"></div><div id="chatRow"><input id="chatIn" maxlength="60" placeholder="発言（昼の話し合い）" autocomplete="off"><button class="go" id="chatSend">送信</button></div></div>
+<div id="chat" hidden><div id="act" hidden></div><div id="log"></div><div id="chatRow"><input id="chatIn" maxlength="60" placeholder="発言（昼の話し合い）" autocomplete="off"><button class="go" id="chatSend">送信</button><button class="go" id="dayPass" hidden>昼をパス</button></div></div>
 <div id="role" class="ov" hidden><div class="rcard"><small>あなたにしか見えません</small><b id="roleName"></b><p id="roleInfo"></p><small>タップで閉じる</small></div></div>
 <div id="result" class="ov" hidden><div class="rcard"><b id="resTitle"></b><p id="resList"></p><small>タップで閉じる</small></div></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -355,7 +355,7 @@ class Game{
   start(){
     const s=this.s,roles=makeRoles(s.players.length,s.cfg);
     if(s.players.length===1){const pool=[];Object.keys(s.cfg).forEach(k=>{for(let i=0;i<s.cfg[k];i++)pool.push(k);});roles[0]=pool[Math.random()*pool.length|0];}   // 1人テスト: 設定した役職からランダム
-    s.started=true;s.day=0;s.log=[];s.cands=null;s.result=null;
+    s.started=true;s.day=0;s.log=[];s.cands=null;s.result=null;this.dayPass={};
     s.players.forEach((p,i)=>{p.alive=true;this.role[p.id]=roles[i];});
     const wolves=s.players.filter(p=>this.isW(p.id)).map(p=>p.id);
     s.players.forEach(p=>this.r.priv(p.id,{role:this.role[p.id],mates:this.isW(p.id)?wolves:[]}));
@@ -378,6 +378,13 @@ class Game{
   act(m){
     const s=this.s,p=s.players.find(x=>x.id===m.from);
     if(!p||!p.alive)return;const ro=this.role[p.id];
+    if(s.phase==='day'&&m.kind==='daypass'){
+      this.dayPass[p.id]=true;
+      // NPCがいる部屋では、人間プレイヤー1人のパスで昼を終了できる
+      const need=s.players.some(x=>x.alive&&x.npc)?1:this.alive().length;
+      if(Object.keys(this.dayPass).length>=need)this.adv();else this.r._pub();
+      return;
+    }
     if(s.phase==='vote'&&m.kind==='pass'){this.votes[p.id]=null;if(Object.keys(this.votes).length>=this.alive().length)this.adv();return;}
     const tg=s.players.find(x=>x.id===m.target&&x.alive);if(!tg)return;
     const pre=s.phase==='day'||s.phase==='vote';   // 夜になる前なら能力を使える
@@ -413,7 +420,7 @@ class Game{
     },2000+Math.random()*25000));
   }
   dawn(){
-    const s=this.s;
+    const s=this.s;this.dayPass={};
     s.log.push('朝になりました。');
     if(this.nightDead)s.log.push(this.nm(this.nightDead)+'さんが無残な姿で発見されました。');
     else if(s.day>1)s.log.push('昨夜の犠牲者はいませんでした。');
@@ -697,7 +704,7 @@ function doAct(k,p){
 function onPhase(s){
   const P=PAL[s.phase]||PAL.deal;
   bgT.set(P.bg);hcT.set(P.hc);hemiT=P.hemi;lampT=P.lamp;starT=P.star;phaseT0=Date.now();
-  endAt=s.phase==='end'?0:Date.now()+s.dur*1000;hideAct();hideBubble();clearVotes();
+  endAt=s.phase==='end'?0:Date.now()+s.dur*1000;hideAct();hideBubble();clearVotes();$('dayPass').hidden=true;$('dayPass').disabled=false;
   const T={deal:'カードが配られました',night:s.day+'日目の夜',day:s.day+'日目の昼 — 話し合い',vote:s.cands?'決選投票':'投票',result:'投票結果',end:'ゲーム終了'};
   $('phase').hidden=false;$('phaseTxt').textContent=T[s.phase];
   if(s.phase==='night'){attackDone=guardDone=false;}
@@ -706,6 +713,9 @@ function onPhase(s){
   if(s.phase==='end')return showResult(s);
   const me=s.players[mySeat];if(!me||!me.alive)return;
   if(s.phase==='day'){
+    $('dayPass').hidden=false;$('dayPass').disabled=false;
+    $('dayPass').onclick=()=>{room.act('daypass',null);$('dayPass').disabled=true;addLog('昼をパスしました','sys');};
+    addLog(s.players.some(p=>p.alive&&p.npc)?'NPCがいるため、誰か1人が「昼をパス」すると投票へ進みます。':'全員が「昼をパス」すると投票へ進みます。','sys');
     if(myRole==='wolf')addLog('【人狼】殺害したい相手をタップして「殺害」で確定。夜になると実行されます。','sys');
     else if(myRole==='knight')addLog('【騎士】守りたい相手をタップして「守る」で確定。次の夜の襲撃から守れます。','sys');
     else if(myRole==='seer'&&!seerUsed)addLog('【占い師】占いたい相手をタップして「占う」（一度だけ）。','sys');
