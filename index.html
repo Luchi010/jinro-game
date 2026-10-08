@@ -74,6 +74,8 @@ input::placeholder{letter-spacing:0;text-transform:none;opacity:.5}
       <div class="row" data-k="wolf"><span>人狼</span><div><button data-d="-1">−</button><b>0</b><button data-d="1">＋</button></div></div>
       <div class="row" data-k="knight"><span>騎士</span><div><button data-d="-1">−</button><b>0</b><button data-d="1">＋</button></div></div>
       <div class="row" data-k="seer"><span>占い師</span><div><button data-d="-1">−</button><b>0</b><button data-d="1">＋</button></div></div>
+      <div class="row" data-k="sheriff"><span>保安官</span><div><button data-d="-1">−</button><b>0</b><button data-d="1">＋</button></div></div>
+      <div class="row" data-k="madman"><span>狂人</span><div><button data-d="-1">−</button><b>0</b><button data-d="1">＋</button></div></div>
       <div class="row" data-k="villager"><span>市民</span><div><button data-d="-1">−</button><b>0</b><button data-d="1">＋</button></div></div>
       <div class="total">合計 <b id="tot">6</b>人（揃わなくても強制スタート可）</div>
       <button class="go" id="goCreate">作成</button>
@@ -327,20 +329,23 @@ class Room{
 }
 
 // 人狼のルールエンジン（作成者のブラウザで動く）。夜→朝→昼の議論→投票→処刑 を勝敗が付くまで繰り返す。
-const ROLE={villager:'市民',wolf:'人狼',seer:'占い師',knight:'騎士',medium:'霊媒師',madman:'狂人'};
+const ROLE={villager:'市民',wolf:'人狼',seer:'占い師',knight:'騎士',medium:'霊媒師',sheriff:'保安官',madman:'狂人'};
 const ROLE_INFO={
   villager:'市民です。特別な能力はありません。話し合いと投票で人狼を見つけましょう。',
   wolf:'昼の話し合い中に相手をタップして「殺害」を押すと襲撃が確定し、夜になると実行されます。市民と同数まで減らせば勝ちです。',
   seer:'ゲーム中に一度だけ、相手をタップして「占う」を押すとその人の役職がわかります。',
   knight:'守りたい相手をタップして「守る」を押すと、次の夜の襲撃から守れます。自分は守れません。',
   medium:'前の日に処刑された人が人狼だったかを知ります。',
-  madman:'人狼の味方です。占いでは人間と出ます。人狼陣営の勝利が目標です。'};
+  sheriff:'一度だけ相手を撃てます。人狼か狂人を撃てば相手だけが死亡し、それ以外を撃つと自分も死亡します。',
+  madman:'人狼の味方です。人狼が誰かは分かりません。人狼のふりをして人狼陣営を勝利させましょう。'};
 function makeRoles(n,c){
   // 人数が足りない（強制スタート）ときも人狼が多すぎないように調整する
   const wolves=Math.max(1,Math.min(c.wolf,(n-1)>>1));
-  const non=[];                                  // 残り枠は 占い師→騎士→市民 の順に優先
+  const non=[];                                  // 残り枠は特殊役職→市民の順に優先
   for(let i=0;i<c.seer;i++)non.push('seer');
   for(let i=0;i<c.knight;i++)non.push('knight');
+  for(let i=0;i<c.sheriff;i++)non.push('sheriff');
+  for(let i=0;i<c.madman;i++)non.push('madman');
   for(let i=0;i<c.villager;i++)non.push('villager');
   const r=[];for(let i=0;i<wolves;i++)r.push('wolf');
   non.slice(0,n-wolves).forEach(x=>r.push(x));
@@ -350,7 +355,7 @@ function makeRoles(n,c){
 }
 class Game{
   constructor(r){this.r=r;this.role={};this.timer=null;this.lastEx=null;this.used=new Set();
-    this.atk={};this.guards=new Set();this.kdone=new Set();this.nightDead=null;this.votes={};}
+    this.atk={};this.guards=new Set();this.kdone=new Set();this.sheriffUsed=new Set();this.nightDead=null;this.votes={};}
   get s(){return this.r.state;}
   alive(){return this.s.players.filter(p=>p.alive);}
   nm(id){return this.s.players.find(p=>p.id===id).name;}
@@ -398,6 +403,11 @@ class Game{
     }
     const tg=s.players.find(x=>x.id===m.target&&x.alive);if(!tg)return;
     const pre=s.phase==='day'||s.phase==='vote';   // 夜になる前なら能力を使える
+    if(pre&&m.kind==='shoot'&&ro==='sheriff'&&tg.id!==p.id&&!this.sheriffUsed.has(p.id)){
+      this.sheriffUsed.add(p.id);tg.alive=false;s.log.push(p.name+'さん（保安官）が'+tg.name+'さんを撃ちました。');
+      if(this.role[tg.id]!=='wolf'&&this.role[tg.id]!=='madman'){p.alive=false;s.log.push('保安官は人狼・狂人以外を撃ったため死亡しました。');}
+      if(this.win())return;this.r._pub();return;
+    }
     if(pre&&m.kind==='attack'&&ro==='wolf'&&!this.isW(tg.id)&&!(p.id in this.atk))this.atk[p.id]=tg.id;
     else if(pre&&m.kind==='guard'&&ro==='knight'&&tg.id!==p.id&&!this.kdone.has(p.id)){this.kdone.add(p.id);this.guards.add(tg.id);}
     else if(pre&&m.kind==='inspect'&&ro==='seer'&&tg.id!==p.id&&!this.used.has(p.id)){this.used.add(p.id);this.r.priv(p.id,{used:true,msg:tg.name+'さんの役職は「'+ROLE[this.role[tg.id]]+'」です'});}
@@ -656,7 +666,7 @@ function refreshWolfTags(){
   });
 }
 function onPriv(m){
-  if(m.role){myRole=m.role;mates=m.mates||[];giveRoleCard(myRole,mateNames());$('roleBtn').hidden=false;refreshWolfTags();}
+  if(m.role){myRole=m.role;mates=m.mates||[];sheriffDone=false;giveRoleCard(myRole,mateNames());$('roleBtn').hidden=false;refreshWolfTags();}
   if(m.used)seerUsed=true;
   if(m.msg)addLog('【能力】'+m.msg,'sys');
 }
@@ -682,7 +692,7 @@ const PAL={
   end:{bg:0x1a1830,hemi:.7,lamp:1.4,star:1,hc:0x8a8ac8}};
 const NOON=0x8cc4f2;
 let bgT=new THREE.Color(0x1a1830),hcT=new THREE.Color(0x8a8ac8),hemiT=.7,lampT=1.4,starT=1,phaseT0=0;
-let attackDone=false,guardDone=false,selId=null;
+let attackDone=false,guardDone=false,sheriffDone=false,selId=null;
 
 // 投票結果: プレイヤーの頭の上に票数を表示
 function showVotes(counts){
@@ -701,6 +711,7 @@ function actionsFor(p){
     if(myRole==='wolf'&&!attackDone&&!mates.includes(p.id))out.push({k:'attack',t:'殺害'});
     if(myRole==='knight'&&!guardDone)out.push({k:'guard',t:'守る'});
     if(myRole==='seer'&&!seerUsed)out.push({k:'inspect',t:'占う'});
+    if(myRole==='sheriff'&&!sheriffDone)out.push({k:'shoot',t:'撃つ'});
   }
   return out;
 }
@@ -711,7 +722,7 @@ function noActReason(p){
   if(!me||me.alive===false)return 'あなたは脱落しているので操作できません';
   if(s.phase==='day'){
     if(myRole==='wolf'&&mates.includes(p.id))return '仲間の人狼は殺害できません';
-    if(myRole==='wolf'||myRole==='knight'||myRole==='seer')return 'この能力は使用済みです（投票は次のフェーズ）';
+    if(myRole==='wolf'||myRole==='knight'||myRole==='seer'||myRole==='sheriff')return 'この能力は使用済みです（投票は次のフェーズ）';
     return '昼は話し合いの時間です。投票は次のフェーズで行います';
   }
   if(s.phase==='vote')return '決選投票の候補者をタップしてください';
@@ -733,6 +744,7 @@ function doAct(k,p){
     if(k==='attack'){attackDone=true;addLog(p.name+'さんの殺害を確定しました（夜になると実行されます）','sys');}
     if(k==='guard'){guardDone=true;addLog(p.name+'さんを守ります（次の夜の襲撃から）','sys');}
     if(k==='inspect'){seerUsed=true;addLog(p.name+'さんを占いました','sys');}
+    if(k==='shoot'){sheriffDone=true;addLog(p.name+'さんを撃ちました（人狼・狂人以外なら自分も死亡します）','sys');}
   }
   hideBubble();
 }
@@ -755,6 +767,7 @@ function onPhase(s){
     if(myRole==='wolf')addLog('【人狼】殺害したい相手をタップして「殺害」で確定。夜になると実行されます。','sys');
     else if(myRole==='knight')addLog('【騎士】守りたい相手をタップして「守る」で確定。次の夜の襲撃から守れます。','sys');
     else if(myRole==='seer'&&!seerUsed)addLog('【占い師】占いたい相手をタップして「占う」（一度だけ）。','sys');
+    else if(myRole==='sheriff'&&!sheriffDone)addLog('【保安官】一度だけ相手をタップして「撃つ」。人狼か狂人以外を撃つと自分も死亡します。','sys');
   }
   if(s.phase==='vote')addLog('投票中も発言できます。処刑したい人をタップして「投票」か「パス」を押してください。','sys');
 }
@@ -778,7 +791,7 @@ const say=t=>$('msg').textContent=t;
 $('bCreate').onclick=()=>{$('pCreate').hidden=!$('pCreate').hidden;$('pJoin').hidden=true;say('');};
 $('bJoin').onclick=()=>{$('pJoin').hidden=!$('pJoin').hidden;$('pCreate').hidden=true;say('');};
 // 部屋の役職人数
-const cfg={wolf:1,knight:1,seer:1,villager:3},tot=()=>cfg.wolf+cfg.knight+cfg.seer+cfg.villager;
+const cfg={wolf:1,knight:1,seer:1,sheriff:0,madman:0,villager:3},tot=()=>Object.values(cfg).reduce((a,b)=>a+b,0);
 const rows=document.querySelectorAll('#pCreate .row');
 function drawCfg(){rows.forEach(r=>r.querySelector('b').textContent=cfg[r.dataset.k]);$('tot').textContent=tot();}
 rows.forEach(r=>r.querySelectorAll('button').forEach(b=>b.onclick=()=>{
