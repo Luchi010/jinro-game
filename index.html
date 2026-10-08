@@ -30,9 +30,6 @@ input::placeholder{letter-spacing:0;text-transform:none;opacity:.5}
 #hud button,#hud span{background:var(--panel);border:1px solid rgba(211,171,95,.45);color:var(--ink);border-radius:10px;padding:8px 12px;font-size:15px}
 #rid{letter-spacing:.25em;color:var(--gold);font-weight:800;font-size:20px}
 #cnt{margin-right:auto}
-#cheatPanel{position:fixed;right:10px;top:58px;width:min(310px,calc(100vw - 20px));max-height:72vh;overflow:auto;background:var(--panel);border:1px solid var(--gold);border-radius:12px;padding:10px;z-index:12}#cheatPanel[hidden]{display:none}
-#cheatPanel h3{margin:0 0 8px;color:var(--gold)}#cheatPanel .cpRow{display:flex;gap:5px;align-items:center;margin:5px 0;flex-wrap:wrap}#cheatPanel button{border:1px solid var(--gold);background:none;color:var(--ink);border-radius:7px;padding:5px 8px}#cheatPanel button.on{background:var(--gold);color:#1a1405}#cheatPanel input{width:55px;flex:none;height:32px;font-size:14px;letter-spacing:0}
-#joy{position:fixed;left:18px;bottom:calc(82px + env(safe-area-inset-bottom,0px));width:112px;height:112px;border:2px solid rgba(211,171,95,.65);border-radius:50%;background:rgba(18,14,30,.35);z-index:9}#joy[hidden]{display:none}#joy i{position:absolute;left:31px;top:31px;width:46px;height:46px;border-radius:50%;background:rgba(211,171,95,.8)}
 
 #nameIn{flex:none;width:100%;letter-spacing:.05em;text-transform:none;background:var(--panel)}
 #phase{position:fixed;top:calc(64px + env(safe-area-inset-top,0px));left:0;right:0;text-align:center;pointer-events:none;font-size:17px;color:var(--gold);text-shadow:0 1px 6px #000}
@@ -71,7 +68,7 @@ input::placeholder{letter-spacing:0;text-transform:none;opacity:.5}
 <div id="stage"></div>
 <main id="home">
   <h1>人狼ゲーム</h1>
-  <div id="version">ver. 1.5.0</div>
+  <div id="version">ver. 1.4.0</div>
   <div class="actions">
     <input id="nameIn" maxlength="8" placeholder="プレイヤー名" autocomplete="off">
     <button class="big" id="bCreate">部屋を作る</button>
@@ -87,7 +84,7 @@ input::placeholder{letter-spacing:0;text-transform:none;opacity:.5}
     </div>
     <button class="big alt" id="bJoin">部屋に入る</button>
     <div class="pane" id="pJoin" hidden>
-      <input id="ridIn" maxlength="6" placeholder="部屋ID（例 XCDFR）" autocapitalize="characters" autocomplete="off">
+      <input id="ridIn" maxlength="5" placeholder="部屋ID（例 XCDFR）" autocapitalize="characters" autocomplete="off">
       <button class="go" id="goJoin">参加</button>
     </div>
     <p id="msg"></p>
@@ -96,8 +93,7 @@ input::placeholder{letter-spacing:0;text-transform:none;opacity:.5}
 <div id="bubble" hidden></div>
 <div id="toast" hidden></div>
 <div id="death" hidden>死亡した<small>あなたは脱落しました</small></div>
-<div id="hud" hidden><button id="rid" title="タップでコピー"></button><span id="cnt"></span><button id="roleBtn" hidden>役職</button><button id="cheatBtn" hidden>リスト</button><button id="npcBtn" hidden>NPC補充</button><button id="leave">退出</button></div>
-<div id="cheatPanel" hidden></div><div id="joy" hidden><i></i></div>
+<div id="hud" hidden><button id="rid" title="タップでコピー"></button><span id="cnt"></span><button id="roleBtn" hidden>役職</button><button id="leave">退出</button></div>
 <div id="phase" hidden><span id="phaseTxt"></span> <b id="timer"></b></div>
 <div id="chat" hidden><div id="act" hidden></div><div id="log"></div><div id="chatRow"><input id="chatIn" maxlength="60" placeholder="発言（昼の話し合い）" autocomplete="off"><button class="go" id="chatSend">送信</button><button class="go" id="dayPass" hidden>昼をパス</button></div></div>
 <div id="role" class="ov" hidden><div class="rcard"><small>あなたにしか見えません</small><b id="roleName"></b><p id="roleInfo"></p><small>タップで閉じる</small></div></div>
@@ -264,7 +260,7 @@ function openClient(id,me,onMsg){
 
 class Room{
   constructor(){
-    this.me=Math.random().toString(36).slice(2,8);this.name='';this.state=null;this.host=false;this.joined=false;this.game=null;this.online=false;this.cheat=false;
+    this.me=Math.random().toString(36).slice(2,8);this.name='';this.state=null;this.host=false;this.joined=false;this.game=null;this.online=false;
     this.onState=this.onPriv=this.onChat=this.onHostLeft=this.onLook=()=>{};
     addEventListener('beforeunload',()=>this.leave());
   }
@@ -281,12 +277,12 @@ class Room{
     // オフライン時は空席をNPCで埋める（人が参加するとNPCと入れ替わる）
     if(!this.online){for(let i=1;i<max;i++)this.state.players.push({id:'npc'+i,name:NAMES[i%16],npc:true});}
   }
-  async join(id,name,cheat=false){
-    this.name=name;this.id=id;this.cheat=cheat;
+  async join(id,name){
+    this.name=name;this.id=id;
     const r=await openClient(id,this.me,m=>this._on(m));this.t=r.t;this.online=r.online;
     if(this.online)this.t.onClose=()=>this.onHostLeft();
     return new Promise((ok,ng)=>{
-      this._ok=ok;this._ng=e=>{try{this.t.close();}catch(_){}ng(e);};this.t.toHost({t:'join',from:this.me,name,cheat});
+      this._ok=ok;this._ng=e=>{try{this.t.close();}catch(_){}ng(e);};this.t.toHost({t:'join',from:this.me,name});
       setTimeout(()=>{if(!this.joined){this.t.close();ng(new Error('部屋が見つからないか、満員です'));}},3000);
     });
   }
@@ -301,7 +297,7 @@ class Room{
           if(k<0){this.t.sendTo(m.from,{t:'reject',reason:'full'});return;}
           s.players[k]={id:m.from,name:m.name};this._pub();return;
         }
-        if(!known)s.players.push({id:m.from,name:m.name,cheat:!!m.cheat});
+        if(!known)s.players.push({id:m.from,name:m.name});
         this._pub();
       }else if(m.t==='leave'){
         if(!s.started){s.players=s.players.filter(p=>p.id!==m.from);}
@@ -324,7 +320,6 @@ class Room{
   }
   _pub(){this.t.broadcast({t:'state',s:this.state});this.onState(this.state);}
   start(){if(this.host&&!this.state.started&&this.state.players.length>=1){this.game=new Game(this);this.game.start();}}
-  cheatAct(kind,target,extra){const m={t:'act',from:this.me,kind,target,extra};this.host?this.game&&this.game.act(m):this.t.toHost(m);}
   act(kind,target){const m={t:'act',from:this.me,kind,target};this.host?this.game.act(m):this.t.toHost(m);}
   priv(to,d){if(String(to).startsWith('npc'))return;const m=Object.assign({t:'priv',to},d);to===this.me?this.onPriv(m):this.t.sendTo(to,m);}
   look(y,p){const m={t:'look',from:this.me,y,p};if(this.host)this.t.broadcast(m);else this.t.toHost(m);}
@@ -376,7 +371,6 @@ class Game{
     s.players.forEach((p,i)=>{p.alive=true;this.role[p.id]=roles[i];});
     const wolves=s.players.filter(p=>this.isW(p.id)).map(p=>p.id);
     s.players.forEach(p=>this.r.priv(p.id,{role:this.role[p.id],mates:this.isW(p.id)?wolves:[]}));
-    s.players.filter(p=>p.cheat).forEach(p=>this.r.priv(p.id,{cheatRoles:this.role}));
     this.phase('deal',10,()=>this.night());
   }
   // 夜になった瞬間に、昼のうちに確定した襲撃（と騎士の護衛）を実行する
@@ -387,7 +381,7 @@ class Game{
       const c={};
       Object.keys(this.atk).forEach(w=>{const wp=s.players.find(p=>p.id===w);if(wp&&wp.alive){const t=this.atk[w];c[t]=(c[t]||0)+1;}});
       const t=this.pick(c),tp=t&&s.players.find(p=>p.id===t);
-      if(tp&&tp.alive&&!this.guards.has(t)&&!tp.invincible){tp.alive=false;this.nightDead=t;}
+      if(tp&&tp.alive&&!this.guards.has(t)){tp.alive=false;this.nightDead=t;}
     }
     this.atk={};this.guards=new Set();this.kdone=new Set();
     if(this.win())return;
@@ -395,9 +389,7 @@ class Game{
   }
   act(m){
     const s=this.s,p=s.players.find(x=>x.id===m.from);
-    if(!p)return;const ro=this.role[p.id];
-    if(m.kind==='cheat'&&p.cheat){this.cheat(m);return;}
-    if(!p.alive)return;
+    if(!p||!p.alive)return;const ro=this.role[p.id];
     if(s.phase==='day'&&m.kind==='daypass'){
       this.dayPass[p.id]=true;
       // NPCがいる部屋では、人間プレイヤー1人のパスで昼を終了できる
@@ -426,19 +418,6 @@ class Game{
       if(Object.keys(this.votes).length>=this.alive().length)this.adv(); // 全員投票済みなら即時結果発表
       else this.r._pub();
     }
-  }
-  cheat(m){
-    const s=this.s,p=s.players.find(x=>x.id===m.from),t=s.players.find(x=>x.id===m.target),cmd=typeof m.extra==='object'?m.extra:{extra:m.extra,value:m.value};
-    if(!p||!p.cheat)return;
-    if(cmd.extra==='invincible'){p.invincible=!!m.value;s.log.push(p.name+'の無敵を'+(p.invincible?'ON':'OFF'));}
-    else if(cmd.extra==='votePower'){p.votePower=Math.max(1,Math.min(99,+cmd.value||1));}
-    else if(cmd.extra==='revive'&&t){t.alive=true;t.invincible=t.invincible||false;s.log.push(t.name+'が蘇生しました。');}
-    else if(cmd.extra==='roleSwap'&&t){const x=this.role[p.id];this.role[p.id]=this.role[t.id];this.role[t.id]=x;s.players.forEach(q=>this.r.priv(q.id,{role:this.role[q.id],mates:this.isW(q.id)?s.players.filter(z=>this.isW(z.id)).map(z=>z.id):[]}));s.log.push(t.name+'と役職を入れ替えました。');}
-    else if(cmd.extra==='resetRoles'){const roles=makeRoles(s.players.length,s.cfg);s.players.forEach((q,i)=>this.role[q.id]=roles[i]);s.players.forEach(q=>this.r.priv(q.id,{role:this.role[q.id],mates:this.isW(q.id)?s.players.filter(z=>this.isW(z.id)).map(z=>z.id):[]}));s.log.push('役職をリセットして配り直しました。');}
-    else if(cmd.extra==='club'&&t&&!t.invincible){t.alive=false;s.log.push(p.name+'が看板で'+t.name+'を殴り倒しました。');if(this.win())return;}
-    else if(cmd.extra==='move'&&t){p.cheatMove=t.id;}
-    s.players.filter(q=>q.cheat).forEach(q=>this.r.priv(q.id,{cheatRoles:this.role}));
-    this.r._pub();
   }
   pick(c){const k=Object.keys(c);if(!k.length)return null;const mx=Math.max(...k.map(x=>c[x])),t=k.filter(x=>c[x]===mx);return t[Math.random()*t.length|0];}
   // ---- NPCの行動（発言はしない）----
@@ -476,12 +455,12 @@ class Game{
   vote(cands){this.votes={};this.s.cands=cands||null;this.s.result=null;this.phase('vote',40,()=>this.tally());this.npcVote();}
   tally(){
     const s=this.s,c={};let pass=0;
-    Object.entries(this.votes).forEach(([from,t])=>{const power=Math.max(1,+((s.players.find(p=>p.id===from)||{}).votePower)||1);if(t)c[t]=(c[t]||0)+power;else pass+=power;});
+    Object.values(this.votes).forEach(t=>{if(t)c[t]=(c[t]||0)+1;else pass++;});
     const k=Object.keys(c),mx=Math.max(0,...k.map(x=>c[x])),tied=k.filter(x=>c[x]===mx);
     s.log.push('投票結果: '+(k.map(i=>this.nm(i)+' '+c[i]+'票').join('、')||'なし')+(pass?'（パス'+pass+'人）':''));
     let again=null,ex=null;
     if(tied.length>1&&!s.cands){s.log.push('同票です。決選投票を行います。');again=tied;}
-    else if(tied.length===1){ex=tied[0];const ep=s.players.find(p=>p.id===ex);if(ep.invincible){s.log.push(this.nm(ex)+'さんは無敵のため処刑されませんでした。');}else{ep.alive=false;this.lastEx=ex;s.log.push(this.nm(ex)+'さんが処刑されました。');}}
+    else if(tied.length===1){ex=tied[0];s.players.find(p=>p.id===ex).alive=false;this.lastEx=ex;s.log.push(this.nm(ex)+'さんが処刑されました。');}
     else s.log.push('処刑は行われませんでした。');
     s.cands=null;s.result={counts:c,pass,ex};
     this.phase('result',8,()=>{if(again)return this.vote(again);if(!this.win())this.night();});   // 結果発表（頭の上に票数）
@@ -537,7 +516,6 @@ const clothMat=M(0x2a1f3d,.8);
 let CR=4,R=3,seatN=8,chars=[],cards=[],startBtn=null,spawnT=0;
 let room=null,state=null,mySeat=-1,mode='home',N=8;
 const cam={yaw:0,pitch:-.35,th:.6};
-let walkOn=false,joyVec={x:0,y:0},walkPos=new THREE.Vector3(),moveTarget=null;
 
 function cardTex(){
   const c=document.createElement('canvas');c.width=128;c.height=192;const x=c.getContext('2d');
@@ -624,7 +602,6 @@ function sync(list){
     if(chars[i]&&(!p||chars[i].userData.pname!==p.name)){world.remove(chars[i]);chars[i]=null;}   // NPCと入れ替わったら作り直す
     if(p&&!chars[i]){const c=makeCharacter(i,p.name),a=i/seatN*Math.PI*2;c.position.set(Math.sin(a)*CR,0,Math.cos(a)*CR);c.rotation.y=a+Math.PI;c.userData.born=performance.now();c.userData.pname=p.name;c.scale.setScalar(.001);world.add(c);chars[i]=c;}
     if(chars[i]&&p&&p.alive===false&&!chars[i].userData.dead)markDead(chars[i],p.name);
-    if(chars[i]&&p&&p.alive!==false&&chars[i].userData.dead){world.remove(chars[i]);chars[i]=null;const c=makeCharacter(i,p.name),a=i/seatN*Math.PI*2;c.position.set(Math.sin(a)*CR,0,Math.cos(a)*CR);c.rotation.y=a+Math.PI;c.userData.born=performance.now();c.userData.pname=p.name;c.scale.setScalar(.001);world.add(c);chars[i]=c;}
   }
   chars.forEach((c,i)=>{if(c){const me=mode!=='home'&&i===mySeat;c.userData.head.visible=!me;c.userData.decor.forEach(o=>o.visible=!me);c.userData.tag.visible=mode!=='home'&&!me;}});
 }
@@ -680,7 +657,7 @@ function stepRoleCard(t){
 // ホーム画面の背景（8人が座る円卓）
 buildTable(8);sync(Array.from({length:8},()=>({})));
 
-let ph='',dy=0,seen=0,myRole=null,mates=[],cheatRoles={},endAt=0,dead=false,seerUsed=false,voteDone=false,cheatInv=false,cheatVotePower=1;
+let ph='',dy=0,seen=0,myRole=null,mates=[],endAt=0,dead=false,seerUsed=false,voteDone=false;
 function mateNames(){return mates.filter(id=>id!==room.me).map(id=>state.players.find(p=>p.id===id).name);}
 function refreshWolfTags(){
   if(!state)return;
@@ -692,28 +669,19 @@ function refreshWolfTags(){
 }
 function onPriv(m){
   if(m.role){myRole=m.role;mates=m.mates||[];sheriffDone=false;giveRoleCard(myRole,mateNames());$('roleBtn').hidden=false;refreshWolfTags();}
-  if(m.cheatRoles){cheatRoles=m.cheatRoles;refreshCheatPanel();}
   if(m.used)seerUsed=true;
   if(m.msg)addLog('【能力】'+m.msg,'sys');
 }
-function cheatSend(extra,target=null,value=null){if(!room||!room.cheat)return;room.cheatAct('cheat',target,{extra,value});}
-function refreshCheatPanel(){
-  if(!room||!room.cheat)return;const box=$('cheatPanel');let h='<h3>チートリスト</h3><div class="cpRow"><button id="invBtn">無敵 OFF</button><label>投票数 <input id="votePower" type="number" min="1" max="99" value="'+cheatVotePower+'"></label><button id="setVote">設定</button></div><div class="cpRow"><button id="resetRoles">役職を全員リセット</button><button id="walkBtn">歩く OFF</button></div><div class="cpRow"><small>プレイヤーを選択：</small></div>';
-  (state?.players||[]).forEach(p=>{h+='<div class="cpRow"><b>'+p.name+(p.alive===false?' ✝':'')+'</b><button data-x="reveal" data-id="'+p.id+'">役職</button><button data-x="move" data-id="'+p.id+'">投票移動</button><button data-x="swap" data-id="'+p.id+'">役職入替</button><button data-x="revive" data-id="'+p.id+'">蘇生</button><button data-x="club" data-id="'+p.id+'">殴る</button></div>';});
-  box.innerHTML=h;box.querySelector('#invBtn').textContent='無敵 '+(cheatInv?'ON':'OFF');box.querySelector('#invBtn').onclick=()=>{cheatInv=!cheatInv;cheatSend('invincible',null,cheatInv);refreshCheatPanel();};box.querySelector('#setVote').onclick=()=>{cheatVotePower=Math.max(1,Math.min(99,+box.querySelector('#votePower').value||1));cheatSend('votePower',null,cheatVotePower);};box.querySelector('#resetRoles').onclick=()=>cheatSend('resetRoles');
-  box.querySelector('#walkBtn').textContent='歩く '+(walkOn?'ON':'OFF');box.querySelector('#walkBtn').onclick=()=>toggleWalk();box.querySelectorAll('[data-x]').forEach(b=>b.onclick=()=>{const id=b.dataset.id,x=b.dataset.x;if(x==='reveal'){const r=cheatRoles[id];if(r)openRole(r,[]);else toast('役職情報を受信中です');}else if(x==='move'){moveTarget=id;toast('投票移動しました');}else{if(x==='club')showSign(mySeat,'殴る！');cheatSend(x==='swap'?'roleSwap':x,id);}});
-}
-function toggleCheatPanel(){const b=$('cheatPanel');b.hidden=!b.hidden;if(!b.hidden)refreshCheatPanel();}
 function onState(s){
   state=s;mySeat=s.players.findIndex(p=>p.id===room.me);sync(s.players);
-  $('rid').textContent=s.id;$('cnt').textContent=s.players.length+'/'+s.max+'人';$('cheatBtn').hidden=!room.cheat;$('npcBtn').hidden=!(room.host&&!s.started);$('npcBtn').textContent=s.players.some(p=>p.npc)?'NPC補充 OFF':'NPC補充 ON';if(room.cheat&&!$('cheatPanel').hidden)refreshCheatPanel();
+  $('rid').textContent=s.id;$('cnt').textContent=s.players.length+'/'+s.max+'人';
   if(!s.started){
     const n=s.players.length,ok=n>=1,txt=room.host?(ok?(n===s.max?'スタート':'強制 '+n+'/'+s.max):'待機 '+n+'/'+s.max):(ok?'ホスト待ち':'待機 '+n+'/'+s.max);
     setBtn(txt,room.host&&ok);return;
   }
   startBtn.visible=false;
   s.log.slice(seen).forEach(t=>addLog(t,'sys'));seen=s.log.length;
-  const me=s.players[mySeat];if(me&&me.alive===false&&!dead){dead=true;addLog('あなたは脱落しました。最後まで見守りましょう。','sys');const d=$('death');d.hidden=false;clearTimeout(d.hideT);d.hideT=setTimeout(()=>d.hidden=true,4200);}if(me&&me.alive!==false&&dead){dead=false;$('death').hidden=true;}
+  const me=s.players[mySeat];if(me&&me.alive===false&&!dead){dead=true;addLog('あなたは脱落しました。最後まで見守りましょう。','sys');const d=$('death');d.hidden=false;clearTimeout(d.hideT);d.hideT=setTimeout(()=>d.hidden=true,4200);}
   if(s.phase!==ph||s.day!==dy){ph=s.phase;dy=s.day;onPhase(s);}
 }
 // 時間帯ごとの背景（夜・朝・昼・夕方で空の色と明るさが変わる）
@@ -811,7 +779,6 @@ function enter(){
   room.onChat=m=>{addLog(m.name+'：'+m.text,m.from===room.me?'me':'');showSign(state.players.findIndex(p=>p.id===m.from),m.text);};
   room.onLook=m=>{if(m.from===room.me)return;const i=state.players.findIndex(p=>p.id===m.from);if(chars[i])chars[i].userData.look={yaw:m.y,pitch:m.p};};
   onState(room.state);addLog(room.online?'オンライン(PeerJS)で接続しました':'オフライン動作中（同じブラウザのタブ間のみ・空席はNPCが着席）','sys');
-  $('cheatBtn').onclick=toggleCheatPanel;$('npcBtn').onclick=()=>{if(!room.host||state.started)return;const want=state.players.length<state.max;if(want){for(let i=state.players.length;i<state.max;i++)state.players.push({id:'npc'+Date.now()+i,name:NAMES[i%16],npc:true});}else state.players=state.players.filter(p=>!p.npc);room._pub();};
 }
 const getName=()=>$('nameIn').value.trim()||'名無し'+(10+Math.random()*90|0);
 function sendChat(){
@@ -839,19 +806,14 @@ $('goCreate').onclick=async()=>{
   try{await room.create(cfg,getName());say('');enter();}catch(e){say(e.message||'作成できませんでした');}
 };
 $('goJoin').onclick=async()=>{
-  const raw=$('ridIn').value.trim().toUpperCase(),cheat=raw.endsWith('>'),id=cheat?raw.slice(0,-1):raw;
-  if(id.length!==5)return say('部屋IDは5文字です（チート参加は末尾に >）');
+  const id=$('ridIn').value.trim().toUpperCase();if(id.length!==5)return say('部屋IDは5文字です');
   say('接続中…');room=new Room();
-  try{await room.join(id,getName(),cheat);room.cheat=cheat;say('');enter();}catch(e){say(e.message);}
+  try{await room.join(id,getName());say('');enter();}catch(e){say(e.message);}
 };
 $('rid').onclick=()=>navigator.clipboard&&navigator.clipboard.writeText($('rid').textContent);
 $('leave').onclick=()=>{room&&room.leave();setTimeout(()=>location.reload(),400);};   // 退出の通知が届いてから戻る
 
 // 操作: ドラッグで見回す／スタートボタンをタップ
-function toggleWalk(){walkOn=!walkOn;$('joy').hidden=!walkOn;if(!walkOn)joyVec={x:0,y:0};if(!$('cheatPanel').hidden)refreshCheatPanel();}
-const joy=$('joy'),joyKnob=joy.querySelector('i');let joyId=null;
-function joyMove(e){const r=joy.getBoundingClientRect(),dx=e.clientX-(r.left+r.width/2),dy=e.clientY-(r.top+r.height/2),m=Math.min(38,Math.hypot(dx,dy)),a=Math.atan2(dy,dx);joyVec={x:Math.cos(a)*m/38,y:Math.sin(a)*m/38};joyKnob.style.transform='translate('+joyVec.x*38+'px,'+joyVec.y*38+'px)';}
-joy.addEventListener('pointerdown',e=>{joyId=e.pointerId;joy.setPointerCapture(e.pointerId);joyMove(e);});joy.addEventListener('pointermove',e=>{if(e.pointerId===joyId)joyMove(e);});joy.addEventListener('pointerup',e=>{if(e.pointerId===joyId){joyId=null;joyVec={x:0,y:0};joyKnob.style.transform='';}});
 const el=renderer.domElement,ray=new THREE.Raycaster();let down=null;
 el.addEventListener('pointerdown',e=>{down={x:e.clientX,y:e.clientY,moved:0};el.setPointerCapture(e.pointerId);});
 el.addEventListener('pointermove',e=>{
@@ -864,7 +826,6 @@ el.addEventListener('pointerup',e=>{
   ray.setFromCamera(new THREE.Vector2(e.clientX/innerWidth*2-1,-(e.clientY/innerHeight)*2+1),camera);
   if(roleCard&&!roleCard.a&&ray.intersectObjects(roleCard.g.children,false).length)return toggleRoleCard();   // カードをタップ
   if(mode==='lobby'&&room.host&&startBtn.userData.ready&&!state.started&&ray.intersectObject(startBtn.userData.cap).length)return room.start();
-  if(room&&room.cheat&&state&&state.started){const ch=ray.intersectObjects(cards,false).find(h=>h.object.visible);if(ch){const ci=cards.indexOf(ch.object),p=state.players[ci],r=p&&cheatRoles[p.id];if(r){openRole(r,[]);return;}}}
   const vis=o=>{for(;o;o=o.parent)if(!o.visible)return false;return true;};
   const hit=ray.intersectObjects(chars.filter((c,i)=>c&&i!==mySeat),true).find(h=>vis(h.object));   // 自分の体は除外
   let ci=-1;
@@ -874,7 +835,7 @@ el.addEventListener('pointerup',e=>{
     chars.forEach((c,i)=>{if(!c||i===mySeat)return;const v=c.localToWorld(new THREE.Vector3(0,1.3,0)).project(camera);if(v.z>1)return;
       const d=Math.hypot((v.x*.5+.5)*innerWidth-e.clientX,(-v.y*.5+.5)*innerHeight-e.clientY);if(d<best){best=d;ci=i;}});
   }
-  if(ci>=0&&state&&state.started){if(room.cheat&&cheatRoles[state.players[ci].id])openRole(cheatRoles[state.players[ci].id],[]);else openBubble(ci);}else hideBubble();   // プレイヤーをタップ
+  if(ci>=0&&state&&state.started)openBubble(ci);else hideBubble();   // プレイヤーをタップ
 });
 function resize(){renderer.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();}
 addEventListener('resize',resize);resize();
@@ -912,7 +873,7 @@ function loop(t){
   }
   if(endAt)$('timer').textContent=Math.max(0,Math.ceil((endAt-Date.now())/1000));
   if(mode==='home'){cam.th+=dt*.08;camera.position.set(Math.sin(cam.th)*10,4.2,Math.cos(cam.th)*10);camera.lookAt(0,1,0);}
-  else{const mi=moveTarget?state.players.findIndex(p=>p.id===moveTarget):mySeat,a=Math.max(0,mi)/seatN*Math.PI*2;camera.position.set(Math.sin(a)*(CR-.06)+walkPos.x,1.38+walkPos.y,Math.cos(a)*(CR-.06)+walkPos.z);camera.rotation.set(cam.pitch,a+cam.yaw,0);if(walkOn){const speed=dt*2.2;walkPos.x+=joyVec.x*Math.cos(a)*speed+joyVec.y*Math.sin(a)*speed;walkPos.z+=joyVec.x*-Math.sin(a)*speed+joyVec.y*Math.cos(a)*speed;walkPos.x=Math.max(-6,Math.min(6,walkPos.x));walkPos.z=Math.max(-6,Math.min(6,walkPos.z));}}
+  else{const a=Math.max(0,mySeat)/seatN*Math.PI*2;camera.position.set(Math.sin(a)*(CR-.06),1.38,Math.cos(a)*(CR-.06));camera.rotation.set(cam.pitch,a+cam.yaw,0);}
   if(selId&&state){
     const i=state.players.findIndex(p=>p.id===selId),c=chars[i],b=$('bubble');
     if(c){camera.updateMatrixWorld();const v=c.localToWorld(new THREE.Vector3(0,2.1,0)).project(camera);
