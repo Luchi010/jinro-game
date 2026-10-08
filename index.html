@@ -51,6 +51,8 @@ input::placeholder{letter-spacing:0;text-transform:none;opacity:.5}
 .total{text-align:right;font-size:14px;opacity:.8}
 #bubble{position:fixed;left:0;top:0;display:flex;gap:6px;transform:translate(-50%,-100%);z-index:5}
 #bubble[hidden]{display:none}
+#toast{position:fixed;left:50%;top:38%;transform:translateX(-50%);background:var(--panel);border:1px solid var(--gold);padding:10px 16px;border-radius:12px;font-size:15px;z-index:6;pointer-events:none;max-width:80vw;text-align:center}
+#toast[hidden]{display:none}
 #bubble button{padding:9px 16px;border-radius:10px;border:1px solid var(--gold);background:var(--panel);color:var(--ink);font-size:17px;font-weight:800;box-shadow:0 2px 10px #000a}
 #bubble button.kill{background:#8a1c1c;border-color:#ff8a8a}
 </style>
@@ -81,6 +83,7 @@ input::placeholder{letter-spacing:0;text-transform:none;opacity:.5}
   </div>
 </main>
 <div id="bubble" hidden></div>
+<div id="toast" hidden></div>
 <div id="hud" hidden><button id="rid" title="タップでコピー"></button><span id="cnt"></span><button id="roleBtn" hidden>役職</button><button id="leave">退出</button></div>
 <div id="phase" hidden><span id="phaseTxt"></span> <b id="timer"></b></div>
 <div id="chat" hidden><div id="act" hidden></div><div id="log"></div><div id="chatRow"><input id="chatIn" maxlength="60" placeholder="発言（昼の話し合い）" autocomplete="off"><button class="go" id="chatSend">送信</button></div></div>
@@ -266,7 +269,7 @@ class Room{
     const r=await openClient(id,this.me,m=>this._on(m));this.t=r.t;this.online=r.online;
     if(this.online)this.t.onClose=()=>this.onHostLeft();
     return new Promise((ok,ng)=>{
-      this._ok=ok;this.t.toHost({t:'join',from:this.me,name});
+      this._ok=ok;this._ng=e=>{try{this.t.close();}catch(_){}ng(e);};this.t.toHost({t:'join',from:this.me,name});
       setTimeout(()=>{if(!this.joined){this.t.close();ng(new Error('部屋が見つからないか、満員です'));}},3000);
     });
   }
@@ -274,16 +277,21 @@ class Room{
     if(this.host){
       const s=this.state;
       if(m.t==='join'){
-        if(!s.started&&s.players.length<s.max&&!s.players.some(p=>p.id===m.from))s.players.push({id:m.from,name:m.name});
+        const known=s.players.some(p=>p.id===m.from);
+        if(!known&&s.started){this.t.sendTo(m.from,{t:'reject',reason:'started'});return;}   // 開始後は入れない
+        if(!known&&s.players.length>=s.max){this.t.sendTo(m.from,{t:'reject',reason:'full'});return;}
+        if(!known)s.players.push({id:m.from,name:m.name});
         this._pub();
       }else if(m.t==='leave'){
-        if(!s.started)s.players=s.players.filter(p=>p.id!==m.from);else{const p=s.players.find(x=>x.id===m.from);if(p)p.alive=false;}
+        if(!s.started){s.players=s.players.filter(p=>p.id!==m.from);}
+        else{const p=s.players.find(x=>x.id===m.from);if(!p||p.alive===false)return;p.alive=false;if(this.game){this.game.onLeave(p.id);return;}}
         this._pub();
       }else if(m.t==='act'&&this.game)this.game.act(m);
       else if(m.t==='chat'){this.onChat(m);this.t.broadcast(m);}   // 発言は全員に中継
       return;
     }
-    if(m.t==='chat')this.onChat(m);
+    if(m.t==='reject'){if(this._ng){const g=this._ng;this._ng=null;g(new Error(m.reason==='started'?'もう開始されています':'満員です'));}}
+    else if(m.t==='chat')this.onChat(m);
     else if(m.t==='priv'){if(m.to===this.me)this.onPriv(m);}
     else if(m.t==='state'){
       this.state=m.s;
@@ -296,7 +304,10 @@ class Room{
   act(kind,target){const m={t:'act',from:this.me,kind,target};this.host?this.game.act(m):this.t.toHost(m);}
   priv(to,d){const m=Object.assign({t:'priv',to},d);to===this.me?this.onPriv(m):this.t.sendTo(to,m);}
   chat(text){const m={t:'chat',from:this.me,name:this.name,text};if(this.host){this.onChat(m);this.t.broadcast(m);}else this.t.toHost(m);}
-  leave(){if(!this.t)return;this.host?this.t.close():this.t.toHost({t:'leave',from:this.me});}
+  leave(){
+    if(!this.t||this.left)return;this.left=true;
+    try{if(this.host)this.t.close();else{this.t.toHost({t:'leave',from:this.me});setTimeout(()=>{try{this.t.close();}catch(_){}},300);}}catch(_){}
+  }
 }
 
 // 人狼のルールエンジン（作成者のブラウザで動く）。夜→朝→昼の議論→投票→処刑 を勝敗が付くまで繰り返す。
@@ -332,7 +343,7 @@ class Game{
   adv(){clearTimeout(this.timer);this.next();}
   start(){
     const s=this.s,roles=makeRoles(s.players.length,s.cfg);
-    if(s.players.length<3){const pool=[];Object.keys(s.cfg).forEach(k=>{for(let i=0;i<s.cfg[k];i++)pool.push(k);});roles[0]=pool[Math.random()*pool.length|0];}   // テストプレイ: 設定した役職からランダム
+    if(s.players.length===1){const pool=[];Object.keys(s.cfg).forEach(k=>{for(let i=0;i<s.cfg[k];i++)pool.push(k);});roles[0]=pool[Math.random()*pool.length|0];}   // 1人テスト: 設定した役職からランダム
     s.started=true;s.day=0;s.log=[];s.cands=null;s.result=null;
     s.players.forEach((p,i)=>{p.alive=true;this.role[p.id]=roles[i];});
     const wolves=s.players.filter(p=>this.isW(p.id)).map(p=>p.id);
@@ -388,6 +399,13 @@ class Game{
     else s.log.push('処刑は行われませんでした。');
     s.cands=null;s.result={counts:c,pass,ex};
     this.phase('result',8,()=>{if(again)return this.vote(again);if(!this.win())this.night();});   // 結果発表（頭の上に票数）
+  }
+  onLeave(id){   // 退出した人は死亡扱い
+    const s=this.s;s.log.push(this.nm(id)+'さんが退出しました（死亡扱い）');
+    delete this.atk[id];delete this.votes[id];
+    if(this.win())return;
+    if(s.phase==='vote'&&Object.keys(this.votes).length>=this.alive().length)this.adv();   // 残りの全員が投票済みなら進める
+    else this.r._pub();
   }
   win(){
     const s=this.s,al=this.alive(),w=al.filter(p=>this.isW(p.id)).length,h=al.length-w;
@@ -602,10 +620,23 @@ function actionsFor(p){
   }
   return out;
 }
+function toast(t){const e=$('toast');e.textContent=t;e.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>{e.hidden=true;},2200);}
+function noActReason(p){
+  const s=state,me=s&&s.players[mySeat];
+  if(!s||!s.started)return '';
+  if(!me||me.alive===false)return 'あなたは脱落しているので操作できません';
+  if(s.phase==='day'){
+    if(myRole==='wolf'&&mates.includes(p.id))return '仲間の人狼は殺害できません';
+    if(myRole==='wolf'||myRole==='knight'||myRole==='seer')return 'この能力は使用済みです（投票は次のフェーズ）';
+    return '昼は話し合いの時間です。投票は次のフェーズで行います';
+  }
+  if(s.phase==='vote')return '決選投票の候補者をタップしてください';
+  return '今は操作できません';
+}
 function hideBubble(){selId=null;$('bubble').hidden=true;}
 function openBubble(i){
   const p=state&&state.players[i],acts=p?actionsFor(p):[];
-  if(!acts.length)return hideBubble();
+  if(!acts.length){hideBubble();const r=p&&noActReason(p);if(r)toast(r);return;}
   selId=p.id;const b=$('bubble');b.innerHTML='';
   acts.forEach(a=>{const e=document.createElement('button');e.textContent=a.t;if(a.k==='attack')e.className='kill';e.onclick=()=>doAct(a.k,p);b.appendChild(e);});
   b.hidden=false;
@@ -677,7 +708,7 @@ $('goJoin').onclick=async()=>{
   try{await room.join(id,getName());say('');enter();}catch(e){say(e.message);}
 };
 $('rid').onclick=()=>navigator.clipboard&&navigator.clipboard.writeText($('rid').textContent);
-$('leave').onclick=()=>{room&&room.leave();location.reload();};
+$('leave').onclick=()=>{room&&room.leave();setTimeout(()=>location.reload(),400);};   // 退出の通知が届いてから戻る
 
 // 操作: ドラッグで見回す／スタートボタンをタップ
 const el=renderer.domElement,ray=new THREE.Raycaster();let down=null;
@@ -693,10 +724,15 @@ el.addEventListener('pointerup',e=>{
   if(roleCard&&!roleCard.a&&ray.intersectObjects(roleCard.g.children,false).length)return toggleRoleCard();   // カードをタップ
   if(mode==='lobby'&&room.host&&startBtn.userData.ready&&!state.started&&ray.intersectObject(startBtn.userData.cap).length)return room.start();
   const vis=o=>{for(;o;o=o.parent)if(!o.visible)return false;return true;};
-  const hit=ray.intersectObjects(chars.filter(Boolean),true).find(h=>vis(h.object));
-  let o=hit&&hit.object;while(o&&chars.indexOf(o)<0)o=o.parent;
-  const ci=o?chars.indexOf(o):-1;
-  if(ci>=0&&ci!==mySeat&&state&&state.started)openBubble(ci);else hideBubble();   // プレイヤーをタップ
+  const hit=ray.intersectObjects(chars.filter((c,i)=>c&&i!==mySeat),true).find(h=>vis(h.object));   // 自分の体は除外
+  let ci=-1;
+  if(hit){let o=hit.object;while(o&&chars.indexOf(o)<0)o=o.parent;ci=o?chars.indexOf(o):-1;}
+  if(ci<0){   // 当たらなくても、タップした場所の近くのプレイヤーを選ぶ（指でも押しやすく）
+    let best=70;
+    chars.forEach((c,i)=>{if(!c||i===mySeat)return;const v=c.localToWorld(new THREE.Vector3(0,1.3,0)).project(camera);if(v.z>1)return;
+      const d=Math.hypot((v.x*.5+.5)*innerWidth-e.clientX,(-v.y*.5+.5)*innerHeight-e.clientY);if(d<best){best=d;ci=i;}});
+  }
+  if(ci>=0&&state&&state.started)openBubble(ci);else hideBubble();   // プレイヤーをタップ
 });
 function resize(){renderer.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();}
 addEventListener('resize',resize);resize();
